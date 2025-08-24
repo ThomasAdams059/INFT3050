@@ -33,7 +33,7 @@ function App() {
   return ( 
     <>
       <Navbar />
-    <div className="container">
+        <div className="container">
       {component}
     </div>
     </>

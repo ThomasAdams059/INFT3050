@@ -3,7 +3,7 @@ Simport React from 'react';
 const HomePage = () => {
   return (
     <div className="mb-8">
-      <header>
+      <header className="border-b border-gray-300 pb-2 mb-4">
         <h1 className="text-3xl font-bold text-#495867">Best Sellers</h1>
       </header>
       <main>
@@ -11,7 +11,7 @@ const HomePage = () => {
       </main>
     </div>
   <div className="mb-8">
-      <header>
+      <header className="border-b border-gray-300 pb-2 mb-4">
         <h1 className="text-3xl font-bold text-#495867">New Releases</h1>
       </header>
       <main>
@@ -19,7 +19,7 @@ const HomePage = () => {
       </main>
     </div>
   <div className="mb-8">
-      <header>
+      <header className="border-b border-gray-300 pb-2 mb-4">
         <h1 className="text-3xl font-bold text-#495867">Non-Fiction</h1>
       </header>
       <main>
@@ -27,7 +27,7 @@ const HomePage = () => {
       </main>
     </div>
   <div className="mb-8">
-      <header>
+      <header className="border-b border-gray-300 pb-2 mb-4">
         <h1 className="text-3xl font-bold text-#495867">Fiction</h1>
       </header>
       <main>
@@ -35,7 +35,7 @@ const HomePage = () => {
       </main>
     </div>
   <div className="mb-8">
-      <header>
+      <header className="border-b border-gray-300 pb-2 mb-4">
         <h1 className="text-3xl font-bold text-#495867">Movies</h1>
       </header>
       <main>
@@ -43,7 +43,7 @@ const HomePage = () => {
       </main>
     </div>
   <div className="mb-8">
-      <header>
+      <header className="border-b border-gray-300 pb-2 mb-4">
         <h1 className="text-3xl font-bold text-#495867">Games</h1>
       </header>
       <main>
@@ -51,7 +51,7 @@ const HomePage = () => {
       </main>
     </div>
   <div className="mb-8">
-      <header>
+      <header className="border-b border-gray-300 pb-2 mb-4">
         <h1 className="text-3xl font-bold text-#495867">Recently Viewed Items</h1>
       </header>
       <main>

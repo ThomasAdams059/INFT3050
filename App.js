@@ -12,7 +12,7 @@ function App() {
   let component
   switch (window.location.pathname) {
     case "/":
-      component = <Home />
+      component = <HomePage />
       break
     case "/genre":
       component = <Genre />

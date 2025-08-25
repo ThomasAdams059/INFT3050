@@ -1,5 +1,5 @@
 import Navbar from "./Navbar"
-import Home from "./pages/Home"
+import HomePage from "./pages/HomePage"
 import Genre from "./pages/Genre"
 import NewReleases from "./pages/NewReleases"
 import BestSellers from "./pages/BestSellers"

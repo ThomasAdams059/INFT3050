@@ -1,4 +1,4 @@
-Simport React from 'react';
+import React from 'react';
 
 const HomePage = () => {
   return (

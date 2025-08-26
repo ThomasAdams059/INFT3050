@@ -45,7 +45,9 @@ const HomePage = () => {
     <>
       <div className="mb-8">
         <header className="border-b pb-2 mb-4 custom-border-color">
-          <h1 className="text-3xl font-bold custom-header-color">Best Sellers</h1>
+          <a href="/bestSellers" className="block">
+            <h1 className="text-3xl font-bold custom-header-color">Best Sellers</h1>
+          </a>
         </header>
         <main>
           <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -63,7 +65,9 @@ const HomePage = () => {
                 
       <div className="mb-8">
             <header className="border-b pb-2 mb-4 custom-border-color">
-              <h1 className="text-3xl font-bold custom-header-color">New Releases</h1>
+              <a href="/newReleases" className="block">
+                <h1 className="text-3xl font-bold custom-header-color">New Releases</h1>
+              </a>
             </header>
             <main>
               <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -81,7 +85,9 @@ const HomePage = () => {
                     
          <div className="mb-8">
                 <header className="border-b pb-2 mb-4 custom-border-color">
-                  <h1 className="text-3xl font-bold custom-header-color">Non-Fiction</h1>
+                    <a href="/nonFiction" className="block">
+                      <h1 className="text-3xl font-bold custom-header-color">Non-Fiction</h1>
+                    </a>
                 </header>
                 <main>
                   <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -99,7 +105,9 @@ const HomePage = () => {
                         
         <div className="mb-8">
               <header className="border-b pb-2 mb-4 custom-border-color">
-                <h1 className="text-3xl font-bold custom-header-color">Fiction</h1>
+                <a href="/fiction" className="block">
+                  <h1 className="text-3xl font-bold custom-header-color">Fiction</h1>
+                </a>
               </header>
               <main>
                 <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -117,7 +125,9 @@ const HomePage = () => {
                       
         <div className="mb-8">
               <header className="border-b pb-2 mb-4 custom-border-color">
-                <h1 className="text-3xl font-bold custom-header-color">Movies</h1>
+                <a href="/movies" className="block">
+                  <h1 className="text-3xl font-bold custom-header-color">Movies</h1>
+                </a>
               </header>
               <main>
                 <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -135,7 +145,9 @@ const HomePage = () => {
                       
         <div className="mb-8">
               <header className="border-b pb-2 mb-4 custom-border-color">
-                <h1 className="text-3xl font-bold custom-header-color">Games</h1>
+                <a href="/games" className="block">
+                  <h1 className="text-3xl font-bold custom-header-color">Games</h1>
+                </a>
               </header>
               <main>
                 <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -152,7 +164,9 @@ const HomePage = () => {
             </div>
           <div className="mb-8">
               <header className="border-b pb-2 mb-4 custom-border-color">
-                <h1 className="text-3xl font-bold custom-header-color">Recently Viewed Items</h1>
+                <a href="/recentlyViewed" className="block">
+                  <h1 className="text-3xl font-bold custom-header-color">Recently Viewed Items</h1>
+                </a>
               </header>
               <main>
                 <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">

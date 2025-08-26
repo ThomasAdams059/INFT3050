@@ -162,6 +162,7 @@ const HomePage = () => {
                 ))}
               </main>
             </div>
+                      
           <div className="mb-8">
               <header className="border-b pb-2 mb-4 custom-border-color">
                 <a href="/recentlyViewed" className="block">

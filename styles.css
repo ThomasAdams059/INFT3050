@@ -52,3 +52,20 @@ body {
 .nav li:hover {
   background-color: #777;
 }
+
+.custom-color-main {
+  color: #495867;
+}
+
+.custom-border-color {
+  border-color: #495867;
+}
+
+.product-details {
+  background-color: #1F2937;
+}
+
+.product-details h3,
+.product-details p {
+  color: #FFFFFF;
+}

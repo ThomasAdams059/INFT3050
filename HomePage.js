@@ -23,7 +23,7 @@ const ProductCard = {{ imageSrc, bookName, price, onClick }} => {
   
 const HomePage = () => {
   const handleCardClick = (bookName) => {
-    console.log('You clicked on: $(bookName)');
+    console.log(You clicked on: ${bookName});
   };
 
   
@@ -46,55 +46,115 @@ const HomePage = () => {
           ))}
         </main>
       </div>
-  <div className="mb-8">
-      <header className="border-b pb-2 mb-4 custom-border-color">
-        <h1 className="text-3xl font-bold custom-header-color">New Releases</h1>
-      </header>
-      <main>
-        <p>Welcome to my simple React home page! This is a basic example of a React project.</p>
-      </main>
-    </div>
-  <div className="mb-8">
-      <header className="border-b pb-2 mb-4 custom-border-color">
-        <h1 className="text-3xl font-bold custom-header-color">Non-Fiction</h1>
-      </header>
-      <main>
-        <p>Welcome to my simple React home page! This is a basic example of a React project.</p>
-      </main>
-    </div>
-  <div className="mb-8">
-      <header className="border-b pb-2 mb-4 custom-border-color">
-        <h1 className="text-3xl font-bold custom-header-color">Fiction</h1>
-      </header>
-      <main>
-        <p>Welcome to my simple React home page! This is a basic example of a React project.</p>
-      </main>
-    </div>
-  <div className="mb-8">
-      <header className="border-b pb-2 mb-4 custom-border-color">
-        <h1 className="text-3xl font-bold custom-header-color">Movies</h1>
-      </header>
-      <main>
-        <p>Welcome to my simple React home page! This is a basic example of a React project.</p>
-      </main>
-    </div>
-  <div className="mb-8">
-      <header className="border-b pb-2 mb-4 custom-border-color">
-        <h1 className="text-3xl font-bold custom-header-color">Games</h1>
-      </header>
-      <main>
-        <p>Welcome to my simple React home page! This is a basic example of a React project.</p>
-      </main>
-    </div>
-  <div className="mb-8">
-      <header className="border-b pb-2 mb-4 custom-border-color">
-        <h1 className="text-3xl font-bold custom-header-color">Recently Viewed Items</h1>
-      </header>
-      <main>
-        <p>Welcome to my simple React home page! This is a basic example of a React project.</p>
-      </main>
-    </div>
+                
+      <div className="mb-8">
+            <header className="border-b pb-2 mb-4 custom-border-color">
+              <h1 className="text-3xl font-bold custom-header-color">New Releases</h1>
+            </header>
+            <main>
+              <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                {mockProducts.slice(0, 10).map((product) => (
+                <ProductCard
+                  key={product.id}
+                  imageSrc={product.image}
+                  bookName={product.name}
+                  price={product.price}
+                  onClick={() => handleCardClick(product.name)}
+                />
+              ))}
+            </main>
+          </div>
+                    
+         <div className="mb-8">
+                <header className="border-b pb-2 mb-4 custom-border-color">
+                  <h1 className="text-3xl font-bold custom-header-color">Non-Fiction</h1>
+                </header>
+                <main>
+                  <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                    {mockProducts.slice(0, 10).map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      imageSrc={product.image}
+                      bookName={product.name}
+                      price={product.price}
+                      onClick={() => handleCardClick(product.name)}
+                    />
+                  ))}
+                </main>
+              </div>
+                        
+        <div className="mb-8">
+              <header className="border-b pb-2 mb-4 custom-border-color">
+                <h1 className="text-3xl font-bold custom-header-color">Fiction</h1>
+              </header>
+              <main>
+                <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                  {mockProducts.slice(0, 10).map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    imageSrc={product.image}
+                    bookName={product.name}
+                    price={product.price}
+                    onClick={() => handleCardClick(product.name)}
+                  />
+                ))}
+              </main>
+            </div>
+                      
+        <div className="mb-8">
+              <header className="border-b pb-2 mb-4 custom-border-color">
+                <h1 className="text-3xl font-bold custom-header-color">Movies</h1>
+              </header>
+              <main>
+                <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                  {mockProducts.slice(0, 10).map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    imageSrc={product.image}
+                    bookName={product.name}
+                    price={product.price}
+                    onClick={() => handleCardClick(product.name)}
+                  />
+                ))}
+              </main>
+            </div>
+                      
+        <div className="mb-8">
+              <header className="border-b pb-2 mb-4 custom-border-color">
+                <h1 className="text-3xl font-bold custom-header-color">Games</h1>
+              </header>
+              <main>
+                <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                  {mockProducts.slice(0, 10).map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    imageSrc={product.image}
+                    bookName={product.name}
+                    price={product.price}
+                    onClick={() => handleCardClick(product.name)}
+                  />
+                ))}
+              </main>
+            </div>
+          <div className="mb-8">
+              <header className="border-b pb-2 mb-4 custom-border-color">
+                <h1 className="text-3xl font-bold custom-header-color">Recently Viewed Items</h1>
+              </header>
+              <main>
+                <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                  {mockProducts.slice(0, 10).map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    imageSrc={product.image}
+                    bookName={product.name}
+                    price={product.price}
+                    onClick={() => handleCardClick(product.name)}
+                  />
+                ))}
+              </main>
+            </div>
+       </>
   );
-}
+};
 
 export default HomePage;

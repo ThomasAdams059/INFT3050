@@ -20,6 +20,20 @@ const ProductCard = {{ imageSrc, bookName, price, onClick }} => {
     </div>
   );
 };
+
+//placeholder until connect to database
+const mockProducts = [
+  { id: 1, name: 'Book 1', price: '$20', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  { id: 2, name: 'Book 2', price: '$25', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  { id: 3, name: 'Book 3', price: '$15', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  { id: 4, name: 'Book 4', price: '$30', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  { id: 5, name: 'Book 5', price: '$18', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  { id: 6, name: 'Book 6', price: '$22', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  { id: 7, name: 'Book 7', price: '$28', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  { id: 8, name: 'Book 8', price: '$19', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  { id: 9, name: 'Book 9', price: '$24', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  { id: 10, name: 'Book 10', price: '$21', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+];
   
 const HomePage = () => {
   const handleCardClick = (bookName) => {

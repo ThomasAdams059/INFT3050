@@ -44,3 +44,76 @@ const mockProducts = [
 const handleCardClick = (bookName) => {
     console.log(`You clicked on: ${bookName}`);
   };
+
+return (
+    <div className="container mx-auto px-4 py-8">
+
+      <nav className="text-gray-500 text-sm mb-4">
+        <span>Home &gt; </span>
+        <span>Genre &gt; </span>
+        <span>Sub-Genre</span>
+      </nav>
+
+      <h1 className="text-3xl font-bold custom-color-main mb-6">{productData.title}</h1>
+      <div className="flex flex-col lg:flex-row gap-8">
+
+        <div className="flex flex-col lg:flex-row lg:w-2/3 gap-8">
+          <div className="w-full lg:w-1/2 flex justify-center">
+            <img src={productData.image} alt={productData.title} className="rounded-lg shadow-lg" />
+          </div>
+          <div className="w-full lg:w-1/2">
+            <h2 className="text-xl font-bold mb-2">Overview:</h2>
+            <p className="text-gray-600 mb-4">{productData.overview}</p>
+            <p className="font-semibold mb-2">Author: <span className="font-normal">{productData.author}</span></p>
+            <p className="font-semibold mb-2">Published: <span className="font-normal">{productData.published}</span></p>
+            <p className="font-semibold mb-2">Last Updated: <span className="font-normal">{productData.lastUpdated}</span></p>
+            <p className="font-semibold">Last Updated By: <span className="font-normal">{productData.lastUpdatedBy}</span></p>
+          </div>
+        </div>
+
+        <div className="flex flex-col lg:w-1/3 gap-4">
+          <div className="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center justify-between">
+            <span className="text-3xl font-bold text-gray-800 mb-2">{productData.price}</span>
+            <div className="flex gap-2 mb-4">
+              <img src="https://placehold.co/50x30/213554/fff?text=Card" alt="Credit Card" className="rounded-md" />
+              <img src="https://placehold.co/50x30/213554/fff?text=Card" alt="VISA" className="rounded-md" />
+              <img src="https://placehold.co/50x30/213554/fff?text=Card" alt="Card" className="rounded-md" />
+            </div>
+            <button className="w-full py-3 bg-[#495867] text-white font-bold rounded-full transition-colors duration-300 hover:bg-[#213554]">
+              Add to Cart
+            </button>
+          </div>
+
+          <div className="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center">
+            <h3 className="text-xl font-bold mb-2">Leave a Review!</h3>
+            <div className="flex text-3xl text-gray-400 gap-1 mb-4">
+              <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+            </div>
+            <button className="w-full py-3 bg-[#495867] text-white font-bold rounded-full transition-colors duration-300 hover:bg-[#213554]">
+              Submit
+            </button>
+          </div>
+        </div>
+      </div>
+          
+      <div className="mt-12">
+        <header className="border-b pb-2 mb-4 custom-border-color">
+          <h1 className="text-3xl font-bold custom-color-main">Other Titles by Author</h1>
+        </header>
+        <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+          {mockProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              imageSrc={product.image}
+              bookName={product.name}
+              price={product.price}
+              onClick={() => handleCardClick(product.name)}
+            />
+          ))}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default ProductPage;

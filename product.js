@@ -87,6 +87,7 @@ return (
           <div className="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center">
             <h3 className="text-xl font-bold mb-2">Leave a Review!</h3>
             <div className="flex text-3xl text-gray-400 gap-1 mb-4">
+  //need to figure out how to make a proper ratings thing
               <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
             </div>
             <button className="w-full py-3 bg-[#495867] text-white font-bold rounded-full transition-colors duration-300 hover:bg-[#213554]">

@@ -32,3 +32,15 @@ const ProductPage = () => {
     lastUpdatedBy: "Smith John",
     price "$30.99"
 };
+
+const mockProducts = [
+    { id: 1, name: 'Book 1', price: '$20', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+    { id: 2, name: 'Book 2', price: '$25', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+    { id: 3, name: 'Book 3', price: '$15', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+    { id: 4, name: 'Book 4', price: '$30', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+    { id: 5, name: 'Book 5', price: '$18', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  ];
+
+const handleCardClick = (bookName) => {
+    console.log(`You clicked on: ${bookName}`);
+  };

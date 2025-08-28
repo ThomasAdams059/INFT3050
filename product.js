@@ -92,9 +92,8 @@ const ProductPage = () => {
           <div className="purchase-box">
             <span className="price-tag">{productData.price}</span>
             <div className="payment-icons">
-              <img src="https://placehold.co/50x30/213554/fff?text=Card" alt="Credit Card" className="rounded-md" />
-              <img src="https://placehold.co/50x30/213554/fff?text=Card" alt="VISA" className="rounded-md" />
-              <img src="https://placehold.co/50x30/213554/fff?text=Card" alt="Card" className="rounded-md" />
+              <img src="https://placehold.co/70x40/992D2D/FFFFFF?text=Mastercard" alt="Mastercard" className="rounded-md" />
+              <img src="https://placehold.co/70x40/003C87/FFFFFF?text=VISA" alt="VISA" className="rounded-md" />
             </div>
             <button className="add-to-cart-button">
               Add to Cart

@@ -1,27 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-const ProductCard = {{ imageSrc, bookName, price, onClick }} => {
+const ProductCard = ({ imageSrc, bookName, price, onClick }) => {
   return (
-    <div
-      className="flex flex-col items-center p-4 bg-gray-100 rounded-1g shadow-md hover:shadow-x1 transition-shadow duration-300 cursor-pointer"
+    <div 
+      className="product-card-horizontal product-card-container"
       onClick={onClick}
     >
-      <div className="w-full h-48 bg-white border border-gray-300 rounded-md flex items-center justify-center mb-4">
-        <img src={imageSrc} alt={bookName} className="max-w-full max-h-full rounded-md" />
+      <div className="product-image-container">
+        <img src={imageSrc} alt={bookName} className="product-image" />
       </div>
-      <div className="w-full text-center product-details">
-        <h3 className="text-1g font-semibold py-1 px-2 rounded-md mb-2">
-        {bookName}
+      <div className="product-details">
+        <h3 className="product-title">
+          {bookName}
         </h3>
-        <p className="text-1g font-bold py-1 px-2 rounded-md">
-        {price}
+        <p className="product-price">
+          {price}
         </p>
       </div>
     </div>
   );
 };
 
+
 const ProductPage = () => {
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+
   const productData = {
     title: "Book Title",
     image: "https://placehold.co/300x400/F4F4F5/18181B?text=Book",
@@ -30,10 +34,10 @@ const ProductPage = () => {
     published: "10/10/10",
     lastUpdated: "10/10/10",
     lastUpdatedBy: "Smith John",
-    price "$30.99"
-};
+    price: "$30.99",
+  };
 
-const mockProducts = [
+  const mockProducts = [
     { id: 1, name: 'Book 1', price: '$20', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
     { id: 2, name: 'Book 2', price: '$25', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
     { id: 3, name: 'Book 3', price: '$15', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
@@ -41,67 +45,95 @@ const mockProducts = [
     { id: 5, name: 'Book 5', price: '$18', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
   ];
 
-const handleCardClick = (bookName) => {
+  const handleCardClick = (bookName) => {
     console.log(`You clicked on: ${bookName}`);
   };
+  
+  const handleStarClick = (index) => {
+    setRating(index);
+  };
 
-return (
-    <div className="container mx-auto px-4 py-8">
+  const handleMouseEnter = (index) => {
+    setHoverRating(index);
+  };
 
-      <nav className="text-gray-500 text-sm mb-4">
+  const handleMouseLeave = () => {
+    setHoverRating(0);
+  };
+
+  const displayRating = hoverRating || rating;
+
+  return (
+    <div className="main-container">
+      <nav className="breadcrumbs">
         <span>Home &gt; </span>
         <span>Genre &gt; </span>
         <span>Sub-Genre</span>
       </nav>
-
-      <h1 className="text-3xl font-bold custom-color-main mb-6">{productData.title}</h1>
-      <div className="flex flex-col lg:flex-row gap-8">
-
-        <div className="flex flex-col lg:flex-row lg:w-2/3 gap-8">
-          <div className="w-full lg:w-1/2 flex justify-center">
-            <img src={productData.image} alt={productData.title} className="rounded-lg shadow-lg" />
+      <header className="section-header">
+        <h1 className="main-heading">{productData.title}</h1>
+        </header>
+      <div className="product-page-main-layout">
+        <div className="product-details-container">
+          <div className="product-image-section">
+            <img src={productData.image} alt={productData.title} className="product-image" />
           </div>
-          <div className="w-full lg:w-1/2">
-            <h2 className="text-xl font-bold mb-2">Overview:</h2>
-            <p className="text-gray-600 mb-4">{productData.overview}</p>
-            <p className="font-semibold mb-2">Author: <span className="font-normal">{productData.author}</span></p>
-            <p className="font-semibold mb-2">Published: <span className="font-normal">{productData.published}</span></p>
-            <p className="font-semibold mb-2">Last Updated: <span className="font-normal">{productData.lastUpdated}</span></p>
-            <p className="font-semibold">Last Updated By: <span className="font-normal">{productData.lastUpdatedBy}</span></p>
+          <div className="product-description">
+            <h2 className="overview-heading">Overview:</h2>
+            <p className="overview-text">{productData.overview}</p>
+            <p className="author-info">Author: <span className="font-normal">{productData.author}</span></p>
+            <p className="published-info">Published: <span className="font-normal">{productData.published}</span></p>
+            <p className="last-updated-info">Last Updated: <span className="font-normal">{productData.lastUpdated}</span></p>
+            <p className="last-updated-by-info">Last Updated By: <span className="font-normal">{productData.lastUpdatedBy}</span></p>
           </div>
         </div>
 
-        <div className="flex flex-col lg:w-1/3 gap-4">
-          <div className="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center justify-between">
-            <span className="text-3xl font-bold text-gray-800 mb-2">{productData.price}</span>
-            <div className="flex gap-2 mb-4">
+        <div className="purchase-container">
+          <div className="purchase-box">
+            <span className="price-tag">{productData.price}</span>
+            <div className="payment-icons">
               <img src="https://placehold.co/50x30/213554/fff?text=Card" alt="Credit Card" className="rounded-md" />
               <img src="https://placehold.co/50x30/213554/fff?text=Card" alt="VISA" className="rounded-md" />
               <img src="https://placehold.co/50x30/213554/fff?text=Card" alt="Card" className="rounded-md" />
             </div>
-            <button className="w-full py-3 bg-[#495867] text-white font-bold rounded-full transition-colors duration-300 hover:bg-[#213554]">
+            <button className="add-to-cart-button">
               Add to Cart
             </button>
           </div>
 
-          <div className="bg-gray-100 p-6 rounded-lg shadow-md flex flex-col items-center">
-            <h3 className="text-xl font-bold mb-2">Leave a Review!</h3>
-            <div className="flex text-3xl text-gray-400 gap-1 mb-4">
-  //need to figure out how to make a proper ratings thing
-              <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+          <div className="review-box">
+            <h3 className="review-heading">Leave a Review!</h3>
+            <div className="star-rating">
+              {[...Array(5)].map((star, index) => {
+                const ratingValue = index + 1;
+                return (
+                  <span
+                    key={index}
+                    className="cursor-pointer"
+                    style={{
+                      color: ratingValue <= displayRating ? "gold" : "lightgray"
+                    }}
+                    onClick={() => handleStarClick(ratingValue)}
+                    onMouseEnter={() => handleMouseEnter(ratingValue)}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    &#9733;
+                  </span>
+                );
+              })}
             </div>
-            <button className="w-full py-3 bg-[#495867] text-white font-bold rounded-full transition-colors duration-300 hover:bg-[#213554]">
+            <button className="submit-review-button">
               Submit
             </button>
           </div>
         </div>
       </div>
-          
-      <div className="mt-12">
-        <header className="border-b pb-2 mb-4 custom-border-color">
-          <h1 className="text-3xl font-bold custom-color-main">Other Titles by Author</h1>
+        
+      <div className="other-titles-section">
+        <header className="other-titles-header">
+          <h1 className="other-titles-heading">Other Titles by Author</h1>
         </header>
-        <main className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <main className="horizontal-scroll-container">
           {mockProducts.map((product) => (
             <ProductCard
               key={product.id}

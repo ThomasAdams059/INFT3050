@@ -5,6 +5,7 @@ import NewReleases from "./newReleases"
 import BestSellers from "./bestSellers"
 import Author from "./author"
 import ProductPage from "./products"
+import Footer from "./footer"
 import './styles.css';
 
 //The main component
@@ -19,10 +20,10 @@ function App() {
       component = <Genre />
       break
     case "/newReleases":
-      component = <newReleases />
+      component = <NewReleases />
       break
     case "/bestSellers":
-      component = <bestSellers />
+      component = <BestSellers />
       break
     case "/author":
       component = <Author />
@@ -37,6 +38,7 @@ function App() {
       <div className="container">
       {component}
     </div>
+    <Footer />
     </>
   );
 }

@@ -1,8 +1,8 @@
 import Navbar from "./navBar"
 import HomePage from "./homepage"
 import Genre from "./genre"
-import newReleases from "./newReleases"
-import bestSellers from "./bestSellers"
+import NewReleases from "./newReleases"
+import BestSellers from "./bestSellers"
 import Author from "./author"
 import ProductPage from "./products"
 import './styles.css';

@@ -71,7 +71,7 @@ body {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #D1D5DB;
-  border-radius: 9999px; /* This makes it pill-shaped */
+  border-radius: 9999px;
   background-color: #FFFFFF;
   font-size: 16px;
   outline: none;
@@ -432,4 +432,58 @@ button {
   .product-grid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
+}
+
+.footer-container {
+  background-color: #495867;
+  color: #FFFFFF;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px;
+  gap: 30px;
+}
+
+.footer-contact {
+  text-align: left;
+}
+
+.footer-contact-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.footer-contact-info {
+  font-size: 14px;
+  margin: 0;
+}
+
+.footer-center {
+  text-align: center;
+  flex-grow: 1;
+}
+
+.footer-center-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.footer-center-subtitle {
+  font-size: 14px;
+  margin: 0;
+}
+
+.footer-payment {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.footer-payment-icon {
+  width: 70px;
+  height: 40px;
+  border-radius: 5px;
+  border: 1px solid #FFFFFF;
 }

@@ -1,14 +1,15 @@
-import Navbar from "./Navbar"
-import HomePage from "./pages/HomePage"
-import Genre from "./pages/Genre"
-import NewReleases from "./pages/NewReleases"
-import BestSellers from "./pages/BestSellers"
-import Author from "./pages/Author"
-import Products from "./pages/Products"
+import Navbar from "./navBar"
+import HomePage from "./homepage"
+import Genre from "./genre"
+import newReleases from "./newReleases"
+import bestSellers from "./bestSellers"
+import Author from "./author"
+import ProductPage from "./products"
 import './styles.css';
 
 //The main component
 function App() {
+  
   let component
   switch (window.location.pathname) {
     case "/":
@@ -18,22 +19,22 @@ function App() {
       component = <Genre />
       break
     case "/newReleases":
-      component = <New Releases />
+      component = <newReleases />
       break
     case "/bestSellers":
-      component = <Best Sellers />
+      component = <bestSellers />
       break
     case "/author":
       component = <Author />
       break
     case "/products":
-      component = <Products />
+      component = <ProductPage />
       break
   }
   return ( 
     <>
       <Navbar />
-        <div className="container">
+      <div className="container">
       {component}
     </div>
     </>
@@ -41,4 +42,3 @@ function App() {
 }
 
 export default App;
-

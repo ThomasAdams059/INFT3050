@@ -1,3 +1,5 @@
+
+
 export default function Navbar() {
     const path = window.location.pathname;
     return (
@@ -11,13 +13,33 @@ export default function Navbar() {
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
           </button>
+
         </div>
         <ul>
+      {/* for account icon */}
+          <CustomLink href="/createAccount">
+          <img 
+              src= '/account.svg'
+              alt="Account"
+              style={{width: "20px", height: "20px",marginRight: "6px"}} />
+          Account
+          </CustomLink>
+          
+      {/* for cart icon */}
+           <CustomLink href="/Cart">
+          <img 
+              src= '/cart.svg'
+              alt="Cart"
+              style={{width: "20px", height: "20px",marginRight: "6px"}} />
+          Cart
+          </CustomLink>
+        
           <CustomLink href="/genre">Genre</CustomLink>
           <CustomLink href="/newReleases">New Releases</CustomLink>
           <CustomLink href="/bestSellers">Best Sellers</CustomLink>
           <CustomLink href="/author">Author</CustomLink>
-          <CustomLink href="/products">Products</CustomLink>
+          <CustomLink href="/product">Products</CustomLink>
+          
         </ul>
       </nav>
     );

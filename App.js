@@ -6,6 +6,8 @@ import BestSellers from "./bestSellers"
 import Author from "./author"
 import ProductPage from "./products"
 import Footer from "./footer"
+import CreateAccount from "./createAccount"
+import RecoverAccount from "./recoverAccount"
 import './styles.css';
 
 //The main component
@@ -31,6 +33,13 @@ function App() {
     case "/products":
       component = <ProductPage />
       break
+    case "/createAccount":
+      component = <CreateAccount/>
+      break
+    case "/recoverAccount":
+      component = <RecoverAccount/>
+      break
+  
   }
   return ( 
     <>

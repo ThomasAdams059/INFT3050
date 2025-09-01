@@ -18,7 +18,8 @@ body {
   color: #666666;
   display: flex;
   justify-content: space-between;
-  align-items: stretch;
+  align-items: center; /*from stretch and added flex-wrap below*/
+  flex-wrap: wrap;
   gap: 32px;
   padding: 0 16px;
   margin: none;
@@ -29,11 +30,13 @@ body {
 }
 
 .nav ul {
-  padding: 0;
+  padding: 0; 
+  flex: 0 1 auto; /*added  flex*/
   margin: 0;
   list-style: none;
   display: flex;
   gap: 16px;
+  
 }
 
 .custom-header-color {
@@ -65,6 +68,8 @@ body {
   justify-content: center;
   flex-grow: 1;
   max-width: 400px;
+  /*added to see if the search box resizes- okay works!*/
+  min-width: 200px;
 }
 
 .search-input {
@@ -487,3 +492,143 @@ button {
   border-radius: 5px;
   border: 1px solid #FFFFFF;
 }
+
+/*make content not touch the edge of screen*/
+.container {
+  max-width: 1600px;
+  margin: 0 auto; /*centres horizontally*/
+  padding: 0 16px; /*left and right room*/
+}
+
+/*for the signup or login screen buttons*/
+
+.account-container {
+  /* centers the whole card */
+  max-width: 520px;
+  margin: 60px auto;
+  padding: 20px 20px 28px;
+  background: #fff;
+  border: 1px solid #CBD5E1;       
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;             
+}
+
+
+.account-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+
+.account-text {
+  color: #344054;                  
+  font-size: 22px;                 
+  font-weight: 700;                
+  line-height: 1.2;
+}
+
+.underline {
+  width: 100%;
+  max-width: 100%;
+  height: 1px;
+  background: #E5E7EB;             
+}
+
+
+.inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;                        
+  margin-top: 16px;
+}
+
+
+.input {
+  display: flex;
+  flex-direction: column;           
+  gap: 6px;
+}
+
+
+.input label {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+}
+
+
+.input input,
+.input select {
+  height: 36px;
+  padding: 6px 10px;
+  border: 1px solid #93C5FD;        
+  border-radius: 6px;
+  background: #fff;
+  color: #111827;
+  font-size: 14px;
+  width: 100%;
+  outline: none;
+}
+
+.input input:focus,
+.input select:focus {
+  border-color: #495867;            
+  box-shadow: 0 0 0 2px rgba(73, 88, 103, 0.15);
+}
+
+.input-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;   /* two equal columns */
+  gap: 12px;
+}
+
+
+@media (max-width: 480px) {
+  .input-row-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.create-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;   
+  gap: 12px;
+  margin: 16px 0 0;
+}
+
+
+.submit {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  height: 44px;
+  padding: 0 16px;
+  background: #4CAF50;              
+  color: #fff;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;                      
+  text-align: center;
+}
+
+.submit:hover { background: #3e9b41; }
+
+.gray {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+.gray:hover { background: #D1D5DB; }
+
+
+.input { width: 100%; height: auto; background: transparent; border-radius: 0; }
+.input input { width: 100%; height: 36px; background: #fff; }

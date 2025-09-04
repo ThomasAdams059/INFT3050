@@ -3,6 +3,7 @@
   box-sizing: border-box;
 }
 
+
 body {
   color: #666666;
 
@@ -34,7 +35,7 @@ body {
 }
 
 .nav ul {
-  padding: 0; 
+  padding: 10px; 
   flex: 0 1 auto; /*added  flex*/
   margin: 0;
   list-style: none;
@@ -54,17 +55,19 @@ body {
   height: 100%;
   display: flex;
   align-items: center;
-  padding: 10px;
+  padding: 10px
 }
 
 .nav li.active {
   background-color: #1F2937;
+ 
   border-radius: 9999px;
 }
 
 .nav li:hover {
   background-color: #1F2937;
   color: #495867;
+ 
   border-radius: 9999px;
 }
 
@@ -506,7 +509,7 @@ button {
   padding: 0 16px; /*left and right room*/
 }
 
-/*for the signup or login screen buttons*/
+/*Orpi for the signup or login screen buttons*/
 
 .account-container {
   /* centers the whole card */
@@ -634,6 +637,19 @@ button {
 }
 
 .gray:hover { background: #D1D5DB; }
+
+.forgot-password {
+  color: #475569;
+  font-weight: 600;
+  font-size: 18px;
+  margin-top: 27px;
+  margin-bottom: 27px;
+  text-decoration: none;
+}
+
+.forgot-password span a {
+  text-decoration: none;
+}
 
 
 .input { width: 100%; height: auto; background: transparent; border-radius: 0; }

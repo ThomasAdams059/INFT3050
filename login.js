@@ -24,6 +24,12 @@ const Login = () => {
                 </div>
             </div>
             
+            <div className = "forgot-password">
+                    <span> 
+                    <a href="/recoverAccount">Lost Password? Click Here!</a>
+                    </span>
+                </div>
+            
             <div className='create-container'>
                 <div className="submit" onClick={() => setAction("Login")}>Log In</div>
                 <div className="submit gray" onClick={() => setAction("Create Account")}>Create Account</div>
@@ -73,8 +79,13 @@ const Login = () => {
                     ...
                     </select>
                 </div>
+            
             </div>
-
+                <div className = "forgot-password">
+                    <span> 
+                    <a href="/recoverAccount">Lost Password? Click Here!</a>
+                    </span>
+                </div>
             <div className='create-container'>
                 <div className="submit gray" onClick={() => setAction("Login")}>Log In</div>
                 <div className="submit" onClick={() => setAction("Create Account")}>Create Account</div>

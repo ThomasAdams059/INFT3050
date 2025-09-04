@@ -54,16 +54,18 @@ body {
   height: 100%;
   display: flex;
   align-items: center;
-  padding: 4px;
+  padding: 10px;
 }
 
 .nav li.active {
   background-color: #1F2937;
+  border-radius: 9999px;
 }
 
 .nav li:hover {
   background-color: #1F2937;
   color: #495867;
+  border-radius: 9999px;
 }
 
 .search-container {

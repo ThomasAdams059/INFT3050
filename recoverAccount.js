@@ -35,10 +35,10 @@ const RecoverAccount = () => {
         <div
           className="submit gray"
           onClick={() => {
-            window.location.href = "/createAccount";
+            window.location.href = "/login";
           }}
         >
-          Back to Create
+          Back to Login
         </div>
       </div>
     </div>

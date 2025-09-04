@@ -13,6 +13,10 @@ body {
   font-size: 32px;
 }
 
+.block {
+  text-decoration: none;
+}
+
 .nav {
   background-color: #495867;
   color: #666666;

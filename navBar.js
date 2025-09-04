@@ -36,7 +36,7 @@ export default function Navbar() {
           <CustomLink href="/newReleases">New Releases</CustomLink>
           <CustomLink href="/bestSellers">Best Sellers</CustomLink>
           <CustomLink href="/author">Author</CustomLink>
-          <CustomLink href="/product">Products</CustomLink>
+          <CustomLink href="/products">Products</CustomLink>
           
         </ul>
       </nav>

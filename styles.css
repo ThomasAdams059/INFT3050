@@ -1,3 +1,5 @@
+/*Dominic Wallace*/
+
 * {
   padding: 0;
   box-sizing: border-box;
@@ -151,6 +153,8 @@ body {
   flex-shrink: 0;
   width: 200px;
 }
+
+/*Thomas Adams*/
 
 button {
   border: none;
@@ -341,6 +345,8 @@ button {
   font-weight: 700;
 }
 
+/*Dominic Wallace*/
+
 .product-card-container {
   display: flex;
   flex-direction: column;
@@ -447,6 +453,8 @@ button {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
+
+/*Thomas Adams*/
 
 .footer-container {
   background-color: #495867;

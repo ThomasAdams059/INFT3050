@@ -10,7 +10,6 @@ import Login from "./login"
 import RecoverAccount from "./recoverAccount"
 import './styles.css';
 
-//The main component
 function App() {
   
   let component

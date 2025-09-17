@@ -8,6 +8,7 @@ import ProductPage from "./products"
 import Footer from "./footer"
 import Login from "./login"
 import RecoverAccount from "./recoverAccount"
+import CartPage from "./Cart";
 import './styles.css';
 
 function App() {
@@ -38,7 +39,9 @@ function App() {
     case "/recoverAccount":
       component = <RecoverAccount/>
       break
-  
+    case "/Cart":
+      component = <CartPage />
+      break
   }
   return ( 
     <>

@@ -15,7 +15,7 @@ export default function Navbar() {
         </div>
         <ul>
       {/* for account icon */}
-          <CustomLink href="/createAccount">
+          <CustomLink href="/login">
           <img 
               src= '/account.svg'
               alt="Account"

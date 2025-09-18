@@ -56,8 +56,9 @@ const mockAuthors = [
 ];
 
 export default function Author() {
-  const handleCardClick = (bookName) => {
-    console.log(`You clicked on: ${bookName}`);
+  const handleCardClick = (bookId) => {
+    // Navigates to the product page with the book's ID in the URL.
+    window.location.href = `/products?id=${bookId}`;
   };
 
   return (
@@ -77,7 +78,7 @@ export default function Author() {
                 imageSrc={book.image}
                 bookName={book.name}
                 price={book.price}
-                onClick={() => handleCardClick(book.name)}
+                onClick={() => handleCardClick(book.id)}
               />
             ))}
           </main>

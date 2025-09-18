@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import Navbar from "./navBar"
 import HomePage from "./homepage"
 import Genre from "./genre"
@@ -12,7 +13,14 @@ import CartPage from "./Cart";
 import './styles.css';
 
 function App() {
-  
+  const [cartItems, setCartItems] = useState([]);
+
+  const handleAddToCart = (item) => {
+    setCartItems(prevItems => [...prevItems, item]);
+    alert(`${item.name} has been added to your cart!`);
+    console.log("Current cart:", [...cartItems, item]);
+  };
+
   let component
   switch (window.location.pathname) {
     case "/":
@@ -31,7 +39,7 @@ function App() {
       component = <Author />
       break
     case "/products":
-      component = <ProductPage />
+      component = <ProductPage onAddToCart={handleAddToCart} />
       break
     case "/login":
       component = <Login />
@@ -40,7 +48,7 @@ function App() {
       component = <RecoverAccount/>
       break
     case "/Cart":
-      component = <CartPage />
+      component = <CartPage cartItems={cartItems} />
       break
   }
   return ( 

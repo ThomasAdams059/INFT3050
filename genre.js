@@ -65,8 +65,9 @@ const mockGenres = [
 ];
 
 export default function Genre() {
-  const handleCardClick = (itemName) => {
-    console.log(`You clicked on: ${itemName}`);
+  const handleCardClick = (bookId) => {
+    // Navigates to the product page with the book's ID in the URL.
+    window.location.href = `/products?id=${bookId}`;
   };
 
   return (
@@ -86,7 +87,7 @@ export default function Genre() {
                 imageSrc={book.image}
                 bookName={book.name}
                 price={book.price}
-                onClick={() => handleCardClick(book.name)}
+                onClick={() => handleCardClick(book.id)}
               />
             ))}
           </main>

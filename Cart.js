@@ -18,9 +18,9 @@ const CartItem = ({ imageSrc, name, price }) => {
 };
 
 // Reusing the ProductCard component from your homepage for consistency.
-const ProductCard = ({ imageSrc, bookName, price }) => {
+const ProductCard = ({ imageSrc, bookName, price, onClick }) => {
   return (
-    <div className="product-card-container">
+    <div className="product-card-container" onClick={onClick}>
       <div className="product-image-container">
         <img src={imageSrc} alt={bookName} className="product-image" />
       </div>
@@ -40,16 +40,22 @@ const ProductCard = ({ imageSrc, bookName, price }) => {
 const mockCartItems = [
   { id: 1, name: 'Book Name', price: 30.99, type: 'Book', image: 'https://placehold.co/100x150/F4F4F5/18181B?text=Book' },
   { id: 2, name: 'Movie Name', price: 30.99, type: 'Movie', image: 'https://placehold.co/100x150/F4F4F5/18181B?text=Movie' },
+  { id: 3, name: 'Toms Dirty Little Secret', price: 69.99, type: 'Movie', image: 'https://placehold.co/100x150/F4F4F5/18181B?text=Movie' },
 ];
 
 const mockRecommendedItems = [
-  { id: 3, name: 'Book 1', price: '$30.99', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-  { id: 4, name: 'Book 2', price: '$30.99', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-  { id: 5, name: 'Book 3', price: '$30.99', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  { id: 4, name: 'Toms Dirty Little Secret 2: The Awakening', price: '$69.99', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Movie' },
+  { id: 5, name: 'Book 2', price: '$30.99', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+  { id: 6, name: 'Book 3', price: '$30.99', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
 ];
 
 const CartPage = () => {
   const cartTotal = mockCartItems.reduce((total, item) => total + item.price, 0);
+
+  const handleCardClick = (productId) => {
+    // Navigates to the product page with the product's ID in the URL.
+    window.location.href = `/products?id=${productId}`;
+  };
 
   return (
     <div className="main-container">
@@ -77,6 +83,7 @@ const CartPage = () => {
                 imageSrc={product.image}
                 bookName={product.name}
                 price={product.price}
+                onClick={() => handleCardClick(product.id)}
               />
             ))}
           </div>
@@ -87,4 +94,3 @@ const CartPage = () => {
 };
 
 export default CartPage;
-

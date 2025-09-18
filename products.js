@@ -6,34 +6,74 @@ const ProductPage = ({ onAddToCart }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [productData, setProductData] = useState(null);
+  const [otherTitles, setOtherTitles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Get the product ID from the URL query string
-    const urlParams = new URLSearchParams(window.location.search);
-    const productId = urlParams.get('id');
+    const fetchProductDetails = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('id');
 
-    if (productId) {
-      // Use the new API endpoint to fetch a specific product by its ID
-      const url = `http://localhost:3001/api/inft3050/Product/${productId}`;
+      if (!productId) {
+        setError("No product ID provided in the URL.");
+        setLoading(false);
+        return;
+      }
 
-      axios.get(url)
-        .then(response => {
-          // Assuming the API returns a single product object
-          const product = response.data;
-          setProductData(product);
+      const baseUrl = "http://localhost:3001/api/inft3050";
+      const allProductsUrl = `${baseUrl}/Product`; // API for all products
+      const stocktakeUrl = `${baseUrl}/Stocktake`;
+
+      try {
+        const [allProductsResponse, stocktakeResponse] = await Promise.all([
+          axios.get(allProductsUrl),
+          axios.get(stocktakeUrl)
+        ]);
+
+        const allProductsList = allProductsResponse.data.list;
+        const stocktakeList = stocktakeResponse.data.list;
+        
+        // Find the main product from the list
+        const mainProduct = allProductsList.find(p => p.ID.toString() === productId);
+
+        if (!mainProduct) {
+          setError("Product not found.");
           setLoading(false);
-        })
-        .catch(err => {
-          console.error("Error fetching product data:", err);
-          setError("Failed to load product data.");
-          setLoading(false);
+          return;
+        }
+
+        // Find the price for the main product
+        const mainProductStock = stocktakeList.find(item => item.ProductId === mainProduct.ID);
+        if (mainProductStock) {
+          mainProduct.Price = mainProductStock.Price;
+        }
+
+        // Find other titles by the same author
+        const otherTitlesByAuthor = allProductsList.filter(p => 
+          p.Author === mainProduct.Author && p.ID !== mainProduct.ID
+        ).map(p => {
+          const otherStock = stocktakeList.find(item => item.ProductId === p.ID);
+          return {
+            id: p.ID,
+            name: p.Name,
+            image: "https://placehold.co/200x300/F4F4F5/18181B?text=Book",
+            price: otherStock ? `$${otherStock.Price.toFixed(2)}` : 'N/A'
+          };
         });
-    } else {
-      setError("No product ID provided in the URL.");
-      setLoading(false);
-    }
+
+        setProductData(mainProduct);
+        setOtherTitles(otherTitlesByAuthor);
+        setLoading(false);
+
+      } catch (err) {
+        console.error("Error fetching product data:", err);
+        setError("Failed to load product data.");
+        setLoading(false);
+      }
+    };
+    
+    fetchProductDetails();
   }, []);
 
   const handleStarClick = (index) => {
@@ -62,24 +102,28 @@ const ProductPage = ({ onAddToCart }) => {
     return <div className="main-container"><p>Product not found.</p></div>;
   }
 
-  // Handle the "Add to Cart" button click
   const onAddToCartClick = () => {
     const itemToAdd = {
       id: productData.ID,
       name: productData.Name,
-      price: productData.Price || 'N/A', // Assuming you have a price property
-      image: "https://placehold.co/100x150/F4F4F5/18181B?text=Book" // Placeholder image
+      price: productData.Price,
+      image: "https://placehold.co/100x150/F4F4F5/18181B?text=Book"
     };
     if (onAddToCart) {
       onAddToCart(itemToAdd);
     }
+  };
+  
+  const handleOtherCardClick = (id) => {
+    // This reloads the page with the new product ID
+    window.location.href = `/products?id=${id}`;
   };
 
   return (
     <div className="main-container">
       <nav className="breadcrumbs">
         <span>Home &gt; </span>
-        <span>{productData.Genre ? productData.Genre.Name : 'Genre'} &gt; </span>
+        <span>{productData.Genre?.Name || 'Genre'} &gt; </span>
         <span>{productData.Name}</span>
       </nav>
       <header className="section-header">
@@ -102,7 +146,7 @@ const ProductPage = ({ onAddToCart }) => {
 
         <div className="purchase-container">
           <div className="purchase-box">
-            <span className="price-tag">${productData.Price || 'N/A'}</span>
+            <span className="price-tag">${productData.Price ? productData.Price.toFixed(2) : 'N/A'}</span>
             <div className="payment-icons">
               <img src="https://placehold.co/70x40/992D2D/FFFFFF?text=Mastercard" alt="Mastercard" className="rounded-md" />
               <img src="https://placehold.co/70x40/003C87/FFFFFF?text=VISA" alt="VISA" className="rounded-md" />
@@ -142,11 +186,22 @@ const ProductPage = ({ onAddToCart }) => {
 
       <div className="other-titles-section">
         <header className="other-titles-header">
-          <h1 className="other-titles-heading">Other Titles by Author</h1>
+          <h1 className="other-titles-heading">Other Titles by {productData.Author}</h1>
         </header>
         <main className="horizontal-scroll-container">
-          {/* This section would require a separate API call to get other books by the same author */}
-          <p>Other titles by {productData.Author} loading...</p>
+          {otherTitles.length > 0 ? (
+            otherTitles.map(product => (
+              <ProductCard
+                key={product.id}
+                imageSrc={product.image}
+                bookName={product.name}
+                price={product.price}
+                onClick={() => handleOtherCardClick(product.id)}
+              />
+            ))
+          ) : (
+            <p>No other titles found by this author.</p>
+          )}
         </main>
       </div>
     </div>

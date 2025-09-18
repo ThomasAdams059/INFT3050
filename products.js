@@ -1,54 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import ProductCard from './productCard';
 
-const ProductCard = ({ imageSrc, bookName, price, onClick }) => {
-  return (
-    <div 
-      className="product-card-horizontal product-card-container"
-      onClick={onClick}
-    >
-      <div className="product-image-container">
-        <img src={imageSrc} alt={bookName} className="product-image" />
-      </div>
-      <div className="product-details">
-        <h3 className="product-title">
-          {bookName}
-        </h3>
-        <p className="product-price">
-          {price}
-        </p>
-      </div>
-    </div>
-  );
-};
-
-
-const ProductPage = () => {
+const ProductPage = ({ onAddToCart }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [productData, setProductData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const productData = {
-    title: "Book Title",
-    image: "https://placehold.co/300x400/F4F4F5/18181B?text=Book",
-    overview: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    author: "John Smith",
-    published: "10/10/10",
-    lastUpdated: "10/10/10",
-    lastUpdatedBy: "Smith John",
-    price: "$30.99",
-  };
+  useEffect(() => {
+    // Get the product ID from the URL query string
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
 
-  const mockProducts = [
-    { id: 1, name: 'Book 1', price: '$20', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-    { id: 2, name: 'Book 2', price: '$25', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-    { id: 3, name: 'Book 3', price: '$15', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-    { id: 4, name: 'Book 4', price: '$30', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-    { id: 5, name: 'Book 5', price: '$18', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-  ];
+    if (productId) {
+      // Use the new API endpoint to fetch a specific product by its ID
+      const url = `http://localhost:3001/api/inft3050/Product/${productId}`;
 
-  const handleCardClick = (bookName) => {
-    console.log(`You clicked on: ${bookName}`);
-  };
-  
+      axios.get(url)
+        .then(response => {
+          // Assuming the API returns a single product object
+          const product = response.data;
+          setProductData(product);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Error fetching product data:", err);
+          setError("Failed to load product data.");
+          setLoading(false);
+        });
+    } else {
+      setError("No product ID provided in the URL.");
+      setLoading(false);
+    }
+  }, []);
+
   const handleStarClick = (index) => {
     setRating(index);
   };
@@ -63,39 +50,64 @@ const ProductPage = () => {
 
   const displayRating = hoverRating || rating;
 
+  if (loading) {
+    return <div className="main-container"><p>Loading product...</p></div>;
+  }
+
+  if (error) {
+    return <div className="main-container"><p>{error}</p></div>;
+  }
+
+  if (!productData) {
+    return <div className="main-container"><p>Product not found.</p></div>;
+  }
+
+  // Handle the "Add to Cart" button click
+  const onAddToCartClick = () => {
+    const itemToAdd = {
+      id: productData.ID,
+      name: productData.Name,
+      price: productData.Price || 'N/A', // Assuming you have a price property
+      image: "https://placehold.co/100x150/F4F4F5/18181B?text=Book" // Placeholder image
+    };
+    if (onAddToCart) {
+      onAddToCart(itemToAdd);
+    }
+  };
+
   return (
     <div className="main-container">
       <nav className="breadcrumbs">
         <span>Home &gt; </span>
-        <span>Genre &gt; </span>
-        <span>Sub-Genre</span>
+        <span>{productData.Genre ? productData.Genre.Name : 'Genre'} &gt; </span>
+        <span>{productData.Name}</span>
       </nav>
       <header className="section-header">
-        <h1 className="main-heading">{productData.title}</h1>
-        </header>
+        <h1 className="main-heading">{productData.Name}</h1>
+      </header>
       <div className="product-page-main-layout">
         <div className="product-details-container">
           <div className="product-image-section">
-            <img src={productData.image} alt={productData.title} className="product-image" />
+            <img src={"https://placehold.co/300x400/F4F4F5/18181B?text=Book"} alt={productData.Name} className="product-image" />
           </div>
           <div className="product-description">
             <h2 className="overview-heading">Overview:</h2>
-            <p className="overview-text">{productData.overview}</p>
-            <p className="author-info">Author: <span className="font-normal">{productData.author}</span></p>
-            <p className="published-info">Published: <span className="font-normal">{productData.published}</span></p>
-            <p className="last-updated-info">Last Updated: <span className="font-normal">{productData.lastUpdated}</span></p>
-            <p className="last-updated-by-info">Last Updated By: <span className="font-normal">{productData.lastUpdatedBy}</span></p>
+            <p className="overview-text">{productData.Description}</p>
+            <p className="author-info">Author: <span className="font-normal">{productData.Author}</span></p>
+            <p className="published-info">Published: <span className="font-normal">{productData.Published ? new Date(productData.Published).toLocaleDateString() : 'N/A'}</span></p>
+            <p className="last-updated-info">Last Updated: <span className="font-normal">{productData.LastUpdated ? new Date(productData.LastUpdated).toLocaleDateString() : 'N/A'}</span></p>
+            <p className="last-updated-by-info">Last Updated By: <span className="font-normal">{productData.LastUpdatedBy}</span></p>
           </div>
         </div>
 
         <div className="purchase-container">
           <div className="purchase-box">
-            <span className="price-tag">{productData.price}</span>
+            <span className="price-tag">${productData.Price || 'N/A'}</span>
             <div className="payment-icons">
               <img src="https://placehold.co/70x40/992D2D/FFFFFF?text=Mastercard" alt="Mastercard" className="rounded-md" />
               <img src="https://placehold.co/70x40/003C87/FFFFFF?text=VISA" alt="VISA" className="rounded-md" />
             </div>
-            <button className="add-to-cart-button">
+            <button className="add-to-cart-button" onClick={onAddToCartClick}>
               Add to Cart
             </button>
           </div>
@@ -127,21 +139,14 @@ const ProductPage = () => {
           </div>
         </div>
       </div>
-        
+
       <div className="other-titles-section">
         <header className="other-titles-header">
           <h1 className="other-titles-heading">Other Titles by Author</h1>
         </header>
         <main className="horizontal-scroll-container">
-          {mockProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              imageSrc={product.image}
-              bookName={product.name}
-              price={product.price}
-              onClick={() => handleCardClick(product.name)}
-            />
-          ))}
+          {/* This section would require a separate API call to get other books by the same author */}
+          <p>Other titles by {productData.Author} loading...</p>
         </main>
       </div>
     </div>

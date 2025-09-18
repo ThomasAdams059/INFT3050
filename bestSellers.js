@@ -36,9 +36,9 @@ const mockProducts = [
 ];
 
 export default function BestSellers() {
-  const handleCardClick = (bookName) => {
-    // This function can be expanded to navigate to a product details page
-    console.log(`You clicked on: ${bookName}`);
+  const handleCardClick = (productId) => {
+    // Navigates to the product page with the product's ID in the URL.
+    window.location.href = `/products?id=${productId}`;
   };
 
   return (
@@ -53,7 +53,7 @@ export default function BestSellers() {
             imageSrc={product.image}
             bookName={product.name}
             price={product.price}
-            onClick={() => handleCardClick(product.name)}
+            onClick={() => handleCardClick(product.id)}
           />
         ))}
       </main>

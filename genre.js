@@ -25,15 +25,16 @@ export default function Genre() {
         // Create a price lookup map for quick access
         const priceMap = {};
         stocktakeList.forEach(item => {
-          priceMap[item.ProductId] = item.Price;
+          if(item.SourceId === 1) // Ensure we only consider items from SourceId 1 (Hard Copy Books)
+            priceMap[item.ProductId] = item.Price;
         });
 
         // Restructure the genre data and add prices from the lookup map
         const restructuredGenres = genresList.map(genre => ({
           id: genre.GenreID,
           name: genre.Name,
-          books: genre['Product List'].map(product => {
-            const price = priceMap[product.ID] ? `$${priceMap[product.ID].toFixed(2)}` : 'Price not available';
+          products: genre['Product List'].map(product => {
+            const price = priceMap[product.ID] ? `$${priceMap[product.ID].toFixed(2)}` : 'Price N/A';
             return {
               id: product.ID,
               name: product.Name,
@@ -55,8 +56,8 @@ export default function Genre() {
     fetchGenreAndStocktakeData();
   }, []);
 
-  const handleCardClick = (bookId) => {
-    window.location.href = `/products?id=${bookId}`;
+  const handleCardClick = (productId) => {
+    window.location.href = `/products?id=${productId}`;
   };
 
   return (
@@ -73,13 +74,13 @@ export default function Genre() {
               <h2 className="section-heading">{genre.name}</h2>
             </header>
             <main className="horizontal-scroll-container">
-              {genre.books.map(book => (
+              {genre.products.slice(0, 7).map(product => (
                 <ProductCard
-                  key={book.id}
-                  imageSrc={book.image}
-                  bookName={book.name}
-                  price={book.price}
-                  onClick={() => handleCardClick(book.id)}
+                  key={product.id}
+                  imageSrc={product.image}
+                  productName={product.name}
+                  price={product.price}
+                  onClick={() => handleCardClick(product.id)}
                 />
               ))}
             </main>

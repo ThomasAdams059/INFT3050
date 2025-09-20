@@ -40,11 +40,11 @@ const ProductCard = ({ imageSrc, bookName, price, onClick }) => {
 const mockCartItems = [
   { id: 1, name: 'Book Name', price: 30.99, type: 'Book', image: 'https://placehold.co/100x150/F4F4F5/18181B?text=Book' },
   { id: 2, name: 'Movie Name', price: 30.99, type: 'Movie', image: 'https://placehold.co/100x150/F4F4F5/18181B?text=Movie' },
-  { id: 3, name: 'Toms Dirty Little Secret', price: 69.99, type: 'Movie', image: 'https://placehold.co/100x150/F4F4F5/18181B?text=Movie' },
+  { id: 3, name: 'Movie Name', price: 9.99, type: 'Movie', image: 'https://placehold.co/100x150/F4F4F5/18181B?text=Movie' },
 ];
 
 const mockRecommendedItems = [
-  { id: 4, name: 'Toms Dirty Little Secret 2: The Awakening', price: '$69.99', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Movie' },
+  { id: 4, name: 'Movie 1', price: '$19.99', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Movie' },
   { id: 5, name: 'Book 2', price: '$30.99', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
   { id: 6, name: 'Book 3', price: '$30.99', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
 ];

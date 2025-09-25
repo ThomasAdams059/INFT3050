@@ -1,6 +1,5 @@
 import React from 'react';
 
-// Reusing the ProductCard component from your homepage.
 const ProductCard = ({ imageSrc, bookName, price, onClick }) => {
   return (
     <div
@@ -26,31 +25,31 @@ const ProductCard = ({ imageSrc, bookName, price, onClick }) => {
 const mockAuthors = [
   {
     id: 1,
-    name: "Jane Doe",
+    name: "Thomas",
     books: [
-      { id: 1, name: 'Jane Doe\'s Book 1', price: '$20', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 2, name: 'Jane Doe\'s Book 2', price: '$25', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 3, name: 'Jane Doe\'s Book 3', price: '$15', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 4, name: 'Jane Doe\'s Book 4', price: '$30', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+      { id: 1, name: 'Tom\'s Book 1', price: '$20', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+      { id: 2, name: 'Tom\'s Book 2', price: '$25', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+      { id: 3, name: 'Tom\'s Book 3', price: '$15', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+      { id: 4, name: 'Tom\'s Book 4', price: '$30', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
     ]
   },
   {
     id: 2,
-    name: "John Smith",
+    name: "Dominic",
     books: [
-      { id: 5, name: 'John Smith\'s Book 1', price: '$18', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 6, name: 'John Smith\'s Book 2', price: '$22', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 7, name: 'John Smith\'s Book 3', price: '$28', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 8, name: 'John Smith\'s Book 4', price: '$19', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+      { id: 5, name: 'Dominic\'s Book 1', price: '$18', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+      { id: 6, name: 'Dominic\'s Book 2', price: '$22', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+      { id: 7, name: 'Dominic\'s Book 3', price: '$28', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+      { id: 8, name: 'Dominic\'s Book 4', price: '$19', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
     ]
   },
   {
     id: 3,
-    name: "A. B. C. Author",
+    name: "Tahsina",
     books: [
-      { id: 9, name: 'Author Book 1', price: '$24', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 10, name: 'Author Book 2', price: '$21', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 11, name: 'Author Book 3', price: '$26', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+      { id: 9, name: 'Tahsina Book 1', price: '$24', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+      { id: 10, name: 'Tahsina Book 2', price: '$21', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
+      { id: 11, name: 'Tahsina Book 3', price: '$26', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
     ]
   }
 ];

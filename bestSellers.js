@@ -13,8 +13,11 @@ export default function BestSellers() {
       .then(response => {
         const stocktakeItems = response.data.list;
 
+        // Filter out any items that are missing product information
+        const validItems = stocktakeItems.filter(item => item.Product && item.Product.Name);
+
         // Sort items by Quantity in ascending order (least remaining stock)
-        const sortedItems = stocktakeItems.sort((a, b) => a.Quantity - b.Quantity);
+        const sortedItems = validItems.sort((a, b) => a.Quantity - b.Quantity);
 
         // Take the top 10 items from the sorted list
         const top10BestSellers = sortedItems.slice(0, 10);
@@ -53,7 +56,7 @@ export default function BestSellers() {
             <ProductCard
               key={product.id}
               imageSrc={product.image}
-              bookName={product.name}
+              productName={product.name}
               price={product.price}
               onClick={() => handleCardClick(product.id)}
             />

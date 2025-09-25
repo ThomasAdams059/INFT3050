@@ -17,7 +17,6 @@ const CartItem = ({ imageSrc, name, price }) => {
   );
 };
 
-// Reusing the ProductCard component from your homepage for consistency.
 const ProductCard = ({ imageSrc, bookName, price, onClick }) => {
   return (
     <div className="product-card-container" onClick={onClick}>

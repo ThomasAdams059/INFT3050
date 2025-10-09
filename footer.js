@@ -15,8 +15,12 @@ export default function Footer() {
       </div>
 
       <div className="footer-payment">
-        <img src="https://placehold.co/70x40/992D2D/FFFFFF?text=Mastercard" alt="Mastercard" className="footer-payment-icon" />
-        <img src="https://placehold.co/70x40/003C87/FFFFFF?text=VISA" alt="VISA" className="footer-payment-icon" />
+        <a href="https://www.mastercard.com/" target="_blank" rel="noopener noreferrer">
+          <img src="https://placehold.co/70x40/992D2D/FFFFFF?text=Mastercard" alt="Mastercard" className="footer-payment-icon" />
+        </a>
+        <a href="https://www.visa.com/" target="_blank" rel="noopener noreferrer">
+          <img src="https://placehold.co/70x40/003C87/FFFFFF?text=VISA" alt="VISA" className="footer-payment-icon" />
+        </a>
       </div>
     </footer>
   );

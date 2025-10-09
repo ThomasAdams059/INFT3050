@@ -8,12 +8,14 @@ import Author from "./author"
 import ProductPage from "./products"
 import Footer from "./footer"
 import Login from "./login"
+import CreateAccount from "./createAccount"
 import RecoverAccount from "./recoverAccount"
 import CartPage from "./Cart";
 import './styles.css';
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const handleAddToCart = (item) => {
     setCartItems(prevItems => [...prevItems, item]);
@@ -21,43 +23,55 @@ function App() {
     console.log("Current cart:", [...cartItems, item]);
   };
 
-  let component
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    // Redirect to homepage after successful login
+    window.location.href = '/';
+  };
+
+  let component;
   switch (window.location.pathname) {
     case "/":
-      component = <HomePage />
-      break
+      component = <HomePage />;
+      break;
     case "/genre":
-      component = <Genre />
-      break
+      component = <Genre />;
+      break;
     case "/newReleases":
-      component = <NewReleases />
-      break
+      component = <NewReleases />;
+      break;
     case "/bestSellers":
-      component = <BestSellers />
-      break
+      component = <BestSellers />;
+      break;
     case "/author":
-      component = <Author />
-      break
+      component = <Author />;
+      break;
     case "/products":
-      component = <ProductPage onAddToCart={handleAddToCart} />
-      break
+      component = <ProductPage onAddToCart={handleAddToCart} />;
+      break;
     case "/login":
-      component = <Login />
-      break
+      component = <Login onLogin={handleLogin} />;
+      break;
+    case "/createAccount":
+      component = <CreateAccount onCreateAccount={handleLogin} />;
+      break;
     case "/recoverAccount":
-      component = <RecoverAccount/>
-      break
+      component = <RecoverAccount />;
+      break;
     case "/Cart":
-      component = <CartPage cartItems={cartItems} />
-      break
+      component = <CartPage cartItems={cartItems} />;
+      break;
+    default:
+      component = <HomePage />;
+      break;
   }
-  return ( 
+  return (
     <>
-      <Navbar />
+      <Navbar isLoggedIn={isLoggedIn} />
       <div className="container">
-      {component}
-    </div>
-    <Footer />
+        {component}
+      </div>
+      <Footer />
     </>
   );
 }

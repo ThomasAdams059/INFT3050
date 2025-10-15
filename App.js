@@ -11,6 +11,10 @@ import Login from "./login"
 import CreateAccount from "./createAccount"
 import RecoverAccount from "./recoverAccount"
 import CartPage from "./Cart";
+import AdminAccount from "./adminAccount";
+import AccountSettings from "./accountSettings"; // New Page Import
+import UserManagement from "./userManagement";   // New Page Import
+import ItemManagement from "./itemManagement";   // New Page Import
 import './styles.css';
 
 function App() {
@@ -23,10 +27,10 @@ function App() {
     console.log("Current cart:", [...cartItems, item]);
   };
 
-  const handleLogin = () => {
+  const handleLogin = (isAdmin = false) => {
     setIsLoggedIn(true);
-    // Redirect to homepage after successful login
-    window.location.href = '/';
+    // Redirect admin users to the Admin Dashboard, others to the homepage (or account settings)
+    window.location.href = isAdmin ? '/adminAccount' : '/accountSettings';
   };
 
   let component;
@@ -60,6 +64,18 @@ function App() {
       break;
     case "/Cart":
       component = <CartPage cartItems={cartItems} />;
+      break;
+    case "/adminAccount":
+      component = <AdminAccount />;
+      break;
+    case "/accountSettings": 
+      component = <AccountSettings />;
+      break;
+    case "/userManagement": 
+      component = <UserManagement />;
+      break;
+    case "/itemManagement": 
+      component = <ItemManagement />;
       break;
     default:
       component = <HomePage />;

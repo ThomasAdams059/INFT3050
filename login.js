@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { tryLoginUser } from './helpers/userHelpers'; // Corrected import path
+import { tryLoginUser } from './helpers/userHelpers';
 
 const Login = ({ onLogin }) => {
   const [action, setAction] = useState("Login");
@@ -8,13 +8,26 @@ const Login = ({ onLogin }) => {
 
   const handleLogin = () => {
     if (username && password) {
+      
+      // --- HARDCODED ADMIN CHECK ---
+      if (username === 'adminAccount') {
+          // Bypass API check for the admin account and redirect directly to the admin page
+          // Pass 'true' for isAdmin status
+          onLogin(true); 
+          return;
+      }
+      // --- END HARDCODED ADMIN CHECK ---
+      
       const resultHandler = (result) => {
-        if (result === "Success!") {
-          onLogin();
+        if (result && result.status === "Success!") {
+          // If not the hardcoded admin, check the isAdmin status returned from the API
+          const isAdmin = result.isAdmin === true; 
+          onLogin(isAdmin);
         } else {
           alert("Login failed. Please check your credentials.");
         }
       };
+      // For all other users, proceed with the normal API login check
       tryLoginUser(username, password, resultHandler);
     } else {
       alert("Please enter both username and password.");

@@ -26,18 +26,35 @@ const generateSalt = () => {
 /* Axios database calls */
 // Login user
 const tryLoginUser = (username, password, setResult) => {
+  // --- HARDCODED ADMIN CHECK (for testing purposes) ---
+  // If the admin username is entered, immediately return success and true for isAdmin
+  if (username === 'adminAccount') {
+    // Simulate a slight delay to mimic network latency
+    setTimeout(() => {
+        setResult({ status: "Success!", isAdmin: true });
+    }, 50);
+    return;
+  }
+  // --- END HARDCODED ADMIN CHECK ---
+
   const headers = {
     'Accept': 'application/json',
   };
+  
   // POST credentials to login
   axios.post(API_PREFIX_SHORT + "/login", { username: username, password: password }, {
     headers: headers, withCredentials: true
-  }).then((response) => { // Success
+  }).then((response) => { 
     console.log(response);
-    setResult("Success!");
+
+    // Extract isAdmin status from the API response
+    // Convert string boolean ('true'/'false') to actual boolean
+    const isAdmin = response.data.user?.IsAdmin === 'true'; 
+
+    setResult({ status: "Success!", isAdmin: isAdmin });
   }).catch((error) => {
-    console.log(error);
-    setResult("Error :(");
+    console.error("Login Error:", error);
+    setResult({ status: "Error :(", isAdmin: false });
   });
 };
 
@@ -51,7 +68,7 @@ const tryAddNewUser = async (fullName, email, password, address, postcode, state
   const hashedPW = await sha256(salt + password);
   
   const newCredentials = {
-    FullName: fullName,
+    UserName: fullName, // Use FullName for UserName for simplicity (based on login changes)
     Email: email,
     Address: address,
     PostCode: postcode,

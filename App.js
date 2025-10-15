@@ -12,9 +12,9 @@ import CreateAccount from "./createAccount"
 import RecoverAccount from "./recoverAccount"
 import CartPage from "./Cart";
 import AdminAccount from "./adminAccount";
-import AccountSettings from "./accountSettings"; // New Page Import
-import UserManagement from "./userManagement";   // New Page Import
-import ItemManagement from "./itemManagement";   // New Page Import
+import AccountSettings from "./accountSettings"; 
+import UserManagement from "./userManagement";   
+import ItemManagement from "./itemManagement"; 
 import './styles.css';
 
 function App() {

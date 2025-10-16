@@ -864,16 +864,20 @@ button {
 }
 
 .admin-manage-button {
-  background-color: #4CAF50; /* Green submit color */
-  color: #FFFFFF;
+  width: 100%;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  height: 44px;
+  padding: 0 16px;
+  background: #4CAF50;              
+  color: #fff;
+  border-radius: 8px;
+  font-size: 15px;
   font-weight: 700;
-  padding: 10px 20px;
-  border-radius: 9999px;
-  width: 90%;
-  border: none;
   cursor: pointer;
-  transition: background-color 300ms;
-  margin-top: auto; /* Push to the bottom */
+  border: none;                      
+  text-align: center;
 }
 
 .admin-manage-button:hover {

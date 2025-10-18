@@ -10,6 +10,10 @@ const AdminAccount = () => {
     window.location.href = '/itemManagement';
   };
 
+  const handleMyAccountClick = () => {
+    window.location.href = '/myAccount';
+  };
+
   return (
     <div className="main-container">
       <h1 className="main-heading custom-header-color">Admin Mode</h1>
@@ -27,6 +31,22 @@ const AdminAccount = () => {
           <button className="admin-manage-button" onClick={handleManageUsersClick}>
             Manage Users
           </button>
+
+
+
+
+
+          {/* TEMPORARY BUTTON TO VIEW PAGES I'M MAKING */}
+
+          <button className="admin-manage-button" onClick={handleMyAccountClick}>
+            TEMP BUTTON
+          </button>
+
+
+
+
+
+
         </div>
         
         {/* Item Management Box */}

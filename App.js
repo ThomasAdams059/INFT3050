@@ -15,7 +15,11 @@ import AdminAccount from "./adminAccount";
 import AccountSettings from "./accountSettings"; 
 import UserManagement from "./userManagement";   
 import ItemManagement from "./itemManagement"; 
+import MyAccount from "./myAccount";
+import OrderHistory from "./orderHistory";
 import './styles.css';
+import AddressBook from './addressBook';
+import PaymentMethods from './paymentMethod';
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
@@ -76,6 +80,21 @@ function App() {
       break;
     case "/itemManagement": 
       component = <ItemManagement />;
+      break;
+    case "/myAccount":
+      component = <MyAccount />;
+      break;
+    case "/orderHistory":
+      component = <OrderHistory />;
+      break;
+    case "/accountSettings":
+      component = <AccountSettings />;
+      break;
+    case "/addressBook":
+      component = <AddressBook />;
+      break;
+    case "/paymentMethod":
+      component = <PaymentMethods />;
       break;
     default:
       component = <HomePage />;

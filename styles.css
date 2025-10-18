@@ -522,6 +522,255 @@ button {
   padding: 0 16px; /*left and right room*/
 }
 
+.account-dashboard-layout {
+  display: flex;
+  flex-direction: column; /* Stacks on smaller screens */
+  gap: 30px;
+  padding: 50px 0;
+  align-items: center; /* Centers items horizontally when stacked */
+}
+
+@media (min-width: 768px) {
+  .account-dashboard-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(250px, 1fr)); /* Two columns, flexible but with a min-width */
+    grid-template-rows: repeat(2, 1fr); /* Two rows, equal height */
+    gap: 75px; 
+    max-width: 1300px; 
+    margin: 0 auto; 
+    justify-content: center; 
+    align-items: center; 
+    }
+}
+
+.account-box {
+  background-color: #f3f4f6;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 40px;
+  width: 100%; /* Ensures box takes full width of its grid cell */
+  max-width: 875px; /* Limits individual box width on smaller screens */
+  display: flex;
+  flex-direction: column;
+  align-items: left; 
+  text-align: left; 
+  height: 100%; 
+  justify-content: center; 
+}
+
+.account-box-list {
+  list-style-type: none;
+  padding: 0;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.account-box-list li {
+  font-size: 16px;
+  color: #666666;
+  padding: 10px 0;
+}
+
+.orderHistory-box {
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 30px;
+  width: 100%;
+  height: 400px;
+  overflow-y: auto;
+}
+
+@media (min-width: 768px) {
+  .orderHistory-box {
+    width: 100%;
+  }
+}
+
+.three-column-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr 1fr; /* three equal columns */
+  gap: 50px;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 20px;
+  align-items: flex-start;
+  min-height: auto;
+}
+
+.account-sidebar {
+  background-color: #f9fafb;
+    padding: 20px;
+    width: 250px; /* Fixed width for desktop view */
+    min-width: 200px; 
+    border-right: 1px solid #e5e7eb;
+    /* Adding a subtle border and shadow to the whole container for better visualization */
+    border-radius: 8px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-heading {
+    font-size: 1.5rem; /* ~24px */
+    font-weight: 600; /* Adjusted for better visual weight */
+    color: #1f2937; 
+    margin: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px; 
+    border-bottom: 2px solid #d1d5db; /* The underline for the heading */
+}
+
+.sidebar-nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.threeColumns-account-container {
+  margin: 0px;
+  border: 1px solid #CBD5E1;       
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;      
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 20px;
+  width: 100%;
+  height: 100%;
+}
+
+.threeColumns-account-container-button {
+  width: 100%;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  height: 44px;
+  padding: 0 16px;
+  background: #4CAF50;              
+  color: #fff;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;                      
+  text-align: center;
+  
+  margin-top: auto;
+  
+}
+
+.threeColumns-account-container-button:hover { 
+  background: #3e9b41; 
+}
+
+.order-item {
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.order-item-details {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.order-item-info {
+    display: flex; 
+    justify-content: space-between; /* Pushes children to the opposite ends of the container */
+    align-items: center; 
+    width: 100%; 
+    gap: 15px; 
+}
+
+.order-item-name {
+  font-weight: bold;
+    margin: 0;
+    /* Allows the name to take up space */
+    flex-grow: 1; 
+    /* Prevents name from wrapping and adds ellipsis if too long */
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    max-width: 80%;
+}
+
+.order-item-price {
+  margin: 0;
+  flex-shrink: 0; /* Prevents shrinking */
+  font-weight: 600;
+  color: #495867;
+}
+
+/* --- Payment Card Details Container --- */
+.cardDetails {
+    display: flex; /* Aligns the icon and the text block side-by-side */
+    gap: 15px; /* Space between the icon block and the details block */
+    padding: 15px;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    background-color: #ffffff;
+    margin-bottom: 10px; /* Space between individual cards */
+    transition: box-shadow 0.3s ease;
+}
+
+.cardDetails:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+}
+
+/* --- Card Icon Container (Left Side) --- */
+.card-icon-container-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80px; 
+    flex-shrink: 0; 
+    padding-right: 15px;
+    border-right: 1px solid #E5E7EB; /* The vertical divider line */
+}
+
+.card-logo-placeholder {
+    width: 60px;
+    height: 40px;
+    margin-bottom: 5px;
+    background-color: #d1d5db; /* Placeholder background color */
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: white;
+}
+
+/* --- Card Details Text Block (Right Side) --- */
+.card-info-block {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
+}
+
+.card-number-text {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #1F2937;
+    margin-bottom: 5px;
+}
+
+.card-meta-row {
+    display: flex;
+    justify-content: space-between; /* Pushes CVC and Expiry to opposite ends */
+    font-size: 0.9rem;
+    color: #6B7280;
+    padding-top: 5px;
+}
+
 /*Orpi for the signup or login screen buttons*/
 
 .account-container {
@@ -554,6 +803,15 @@ button {
   font-weight: 700;                
   line-height: 1.2;
 }
+
+.container-account {
+  display: grid;   
+  gap: 12px;
+  margin: 16px 0 0;
+
+}
+
+
 
 .underline {
   width: 100%;
@@ -640,6 +898,7 @@ button {
   cursor: pointer;
   border: none;                      
   text-align: center;
+  
 }
 
 .submit:hover { background: #3e9b41; }

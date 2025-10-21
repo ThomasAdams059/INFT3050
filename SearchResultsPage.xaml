@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PaperTrails_ThomasAdams_c3429938.Pages.SearchResultsPage"
+             xmlns:local="clr-namespace:PaperTrails_ThomasAdams_c3429938.Models"
+             xmlns:pages="clr-namespace:PaperTrails_ThomasAdams_c3429938.Pages"
+             Title="Search Results">
+    <ScrollView>
+        <VerticalStackLayout>
+            <CollectionView ItemsSource="{Binding SearchResults}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="local:Book">
+                        <Grid Padding="10">
+                            
+                            
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer 
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type pages:SearchResultsPage}}, Path=NavigateToBookDetailsCommand}"
+                                    CommandParameter="{Binding .}" />   
+                            </Grid.GestureRecognizers>
+                            
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="0.25*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="0.1*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Image Grid.Column="0" Source="book_placeholder.png" Aspect="AspectFit"/>
+
+                            <VerticalStackLayout Grid.Column="1" Margin="10,0">
+                                <Label Text="{Binding title}" FontAttributes="Bold"/>
+                                <Label Text="{Binding description}"  FontSize="12" MaxLines="3 " LineBreakMode="TailTruncation"/>
+                            </VerticalStackLayout>
+
+                            <Image Grid.Column="2" Source="arrow_right.png" Aspect="AspectFit"/>
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converters="clr-namespace:PaperTrails_ThomasAdams_c3429938.Converters"
+             xmlns:maps="http://schemas.microsoft.com/dotnet/2021/maui/maps"
+             xmlns:models="clr-namespace:PaperTrails_ThomasAdams_c3429938.Models"
+             x:Class="PaperTrails_ThomasAdams_c3429938.Pages.SavedBookStats"
+             Title="">
+    
+    <ContentPage.Resources>
+        <converters:TimeSpanToFormattedStringConverter x:Key="TimeSpanConverter" />
+    </ContentPage.Resources>
+    
+    <ScrollView>
+        <VerticalStackLayout>
+            <Image
+                Source="book_placeholder.png"
+                HorizontalOptions="Center"
+                HeightRequest="200"
+                WidthRequest="300"/>
+
+            <BoxView HeightRequest="1" HorizontalOptions="Fill" />
+
+            <Label
+                Text="{Binding Book.title}"
+                SemanticProperties.HeadingLevel="Level2"
+                FontSize="18"
+                HorizontalOptions="Center"
+                Margin="0, 5, 0, 0"/>
+
+            <Label
+                Text="{Binding Book.description}"
+                SemanticProperties.HeadingLevel="Level3"
+                FontSize="14"
+                Margin="10, 5, 0, 10"/>
+
+            <BoxView HeightRequest="1" HorizontalOptions="Fill" />
+
+            <Grid ColumnDefinitions="*, *" Margin="0, 0">
+                <Label
+                    Grid.Column="0"
+                    Text="{Binding Book.categories, StringFormat='Genre: {0}'}"
+                    FontSize="16"
+                    HorizontalOptions="Start"
+                    Margin="10"/>
+
+                <Label
+                    Grid.Column="1"
+                    Text="{Binding Book.pageCount, StringFormat='Page Count: {0}'}"
+                    FontSize="16"
+                    HorizontalOptions="End"
+                    Margin="10"/>
+            </Grid>
+
+            <BoxView HeightRequest="1" HorizontalOptions="Fill" />
+
+            <Label
+                Text="Book Stats"
+                SemanticProperties.HeadingLevel="Level2"
+                FontSize="18"
+                HorizontalOptions="Center"
+                Margin="0, 10, 0, 0"/>
+
+            <Grid ColumnDefinitions="*, *" RowDefinitions="140, Auto">
+
+                <VerticalStackLayout Grid.Row="0" Grid.Column="0">
+                    <Border Grid.Row="0" Grid.Column="0" StrokeThickness="1" Padding="5, 10" Margin="20">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="350" />
+                        </Border.StrokeShape>
+                        <VerticalStackLayout
+                            Spacing="5"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center">
+
+                            <Label
+                                Text="{Binding BookStats.avgPagesPerSession}"
+                                FontSize="20"
+                                FontAttributes="Bold"
+                                HorizontalOptions="Center" />
+
+                            <Image
+                                Source="arrow_right.png"
+                                HeightRequest="40"
+                                WidthRequest="50"
+                                HorizontalOptions="Center" />
+
+                            <Label
+                                Text="Avg. Pages Per Session"
+                                FontSize="12"
+                                HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Row="0" Grid.Column="1">
+                    <Border Grid.Row="0" Grid.Column="0" StrokeThickness="1" Padding="5, 10" Margin="20">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="350" />
+                        </Border.StrokeShape>
+
+                        <VerticalStackLayout
+                             Spacing="5"
+                             HorizontalOptions="Center"
+                             VerticalOptions="Center">
+
+                            <Label
+                                 Text="{Binding BookStats.pagesRead}"
+                                 FontSize="20"
+                                 FontAttributes="Bold"
+                                 HorizontalOptions="Center" />
+
+                            <Image
+                                 Source="arrow_right.png"
+                                 HeightRequest="40"
+                                 WidthRequest="50"
+                                 HorizontalOptions="Center" />
+
+                            <Label
+                                 Text="Pages Read"
+                                 FontSize="14"
+                                 HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Row="1" Grid.Column="0">
+                    <Border Grid.Row="0" Grid.Column="0" StrokeThickness="1" Padding="5, 10" Margin="20">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="350" />
+                        </Border.StrokeShape>
+
+                        <VerticalStackLayout
+                             Spacing="5"
+                             HorizontalOptions="Center"
+                             VerticalOptions="Center">
+
+                            <Label
+                                 Text="{Binding BookStats.timeSpentReading, Converter={StaticResource TimeSpanConverter}}"
+                                 FontSize="20"
+                                 FontAttributes="Bold"
+                                 HorizontalOptions="Center" />
+
+                            <Image
+                                 Source="arrow_right.png"
+                                 HeightRequest="40"
+                                 WidthRequest="50"
+                                 HorizontalOptions="Center" />
+
+                            <Label
+                                 Text="Time Spent Reading"
+                                 FontSize="12"
+                                 HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Row="1" Grid.Column="1">
+                    <Border Grid.Row="0" Grid.Column="0" StrokeThickness="1" Padding="5, 10" Margin="20">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="350" />
+                        </Border.StrokeShape>
+
+                        <VerticalStackLayout
+                             Spacing="5"
+                             HorizontalOptions="Center"
+                             VerticalOptions="Center">
+
+                            <Label
+                                 Text="{Binding BookStats.avgReadingTime, Converter={StaticResource TimeSpanConverter}}"
+                                 FontSize="20"
+                                 FontAttributes="Bold"
+                                 HorizontalOptions="Center" />
+
+                            <Image
+                                 Source="arrow_right.png"
+                                 HeightRequest="40"
+                                 WidthRequest="50"
+                                 HorizontalOptions="Center" />
+
+                            <Label
+                                 Text="Avg. Reading Time"
+                                 FontSize="12"
+                                 HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </Grid>
+
+            <Grid HeightRequest="350" WidthRequest="350" Margin="0, 20" HorizontalOptions="Center">
+
+                <maps:Map x:Name="mapLocations" 
+                      HeightRequest="300" 
+                      WidthRequest="350" 
+                      HorizontalOptions="Center"
+                      VerticalOptions="Center"
+                      IsScrollEnabled="True"  ItemsSource="{Binding ReadingLocationPins}">
+
+                    <maps:Map.ItemTemplate>
+                        <DataTemplate xmlns:models="clr-namespace:PaperTrails_ThomasAdams_c3429938.Models"
+                                  x:DataType="models:ReadingLocationPin">
+                            <maps:Pin Location="{Binding Location}"
+                                  Label="{Binding Label}"
+                                  Address="{Binding Address}"
+                                  Type="Place" />
+                        </DataTemplate>
+                    </maps:Map.ItemTemplate>
+
+                </maps:Map>
+
+            </Grid>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

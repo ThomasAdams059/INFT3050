@@ -1,119 +1,174 @@
-import { useState } from "react";
+import React, { useState } from 'react';
+import axios from 'axios';
 
 const ItemManagement = () => {
   // Add Item state
   const [itemName, setItemName] = useState("");
   const [author, setAuthor] = useState("");
   const [description, setDescription] = useState("");
-  const [genre, setGenre] = useState("");
-  const [subgenre, setSubgenre] = useState("");
-  const [type, setType] = useState("Book");
+  const [genreId, setGenreId] = useState(""); // Added Genre ID state
+  const [subgenreId, setSubgenreId] = useState(""); // Renamed for clarity
+  const [published, setPublished] = useState(""); // Date as string
 
   // Edit/Delete Item state
-  const [searchItem, setSearchItem] = useState("");
-  const [showItemInfo, setShowItemInfo] = useState(true); // Changed to true
+  const [searchItemName, setSearchItemName] = useState("");
+  const [currentItem, setCurrentItem] = useState(null);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [searchError, setSearchError] = useState(null);
+
+  // API base URL
+  const baseUrl = "http://localhost:3001/api/inft3050/Product";
+
+  // --- API Functions ---
 
   // Handle Add Item
-  const handleAddItem = (event) => {
+  const handleAddItem = async (event) => {
     event.preventDefault();
-    // Clear form after submission
-    setItemName("");
-    setAuthor("");
-    setDescription("");
-    setGenre("");
-    setSubgenre("");
-    setType("Book");
+    const newItem = {
+      Name: itemName,
+      Author: author || null, // Allow empty author
+      Description: description || null, // Allow empty description
+      Genre: parseInt(genreId, 10), // Parse to integer
+      SubGenre: parseInt(subgenreId, 10), // Parse to integer
+      Published: published ? new Date(published).toISOString() : null,
+      LastUpdatedBy: "adminAccount", // Example user
+      LastUpdated: new Date().toISOString(),
+    };
+
+    // Basic validation
+    if (!itemName || isNaN(newItem.Genre) || isNaN(newItem.SubGenre)) {
+      alert("Please fill in required fields (Name, Genre ID, SubGenre ID).");
+      return;
+    }
+
+    try {
+      const response = await axios.post(baseUrl, newItem, { withCredentials: true });
+      alert(`Item "${response.data.Name}" added successfully! ID: ${response.data.ID}`);
+      // Clear form
+      setItemName("");
+      setAuthor("");
+      setDescription("");
+      setGenreId("");
+      setSubgenreId("");
+      setPublished("");
+    } catch (error) {
+      console.error("Error adding item:", error.response ? error.response.data : error);
+      alert(`Failed to add item. ${error.response?.data?.message || 'Check console.'}`);
+    }
   };
 
-  // Handle Search Item
-  const handleSearchItem = (event) => {
+  // Handle Search Item by Name
+  const handleSearchItem = async (event) => {
     event.preventDefault();
-    setShowItemInfo(true);
+    setLoadingSearch(true);
+    setCurrentItem(null);
+    setSearchError(null);
+
+    try {
+      // Fetch all and filter client-side
+      const response = await axios.get(baseUrl, { withCredentials: true });
+      const foundItem = response.data.list.find(item =>
+        item.Name.toLowerCase() === searchItemName.toLowerCase()
+      );
+
+      if (foundItem) {
+        setCurrentItem(foundItem);
+      } else {
+        setSearchError("Item not found.");
+      }
+    } catch (error) {
+      console.error("Error searching item:", error);
+      setSearchError("Failed to search for item.");
+    } finally {
+      setLoadingSearch(false);
+    }
   };
 
-  // Handle Edit Item
-  const handleEditItem = () => {
-    // Edit functionality will be added later
+  // Handle Edit Item (Placeholder - a real edit needs a form)
+  const handleEditItem = async () => {
+    if (!currentItem) return;
+
+    const newDescription = prompt("Enter new description:", currentItem.Description);
+    if (newDescription !== null) {
+      // Prepare the data matching the API structure
+      const updatedItemData = {
+        ID: currentItem.ID, // Keep the ID
+        Name: currentItem.Name, // Keep existing Name
+        Author: currentItem.Author, // Keep existing Author
+        Description: newDescription, // Update Description
+        Genre: currentItem.Genre, // Keep existing Genre ID
+        SubGenre: currentItem.SubGenre, // Keep existing SubGenre ID
+        Published: currentItem.Published, // Keep existing Published date
+        LastUpdated: new Date().toISOString(), // Update timestamp
+        LastUpdatedBy: "adminAccount", // Update user
+      };
+
+      try {
+        const response = await axios.put(`${baseUrl}/${currentItem.ID}`, updatedItemData, { withCredentials: true });
+        setCurrentItem(response.data);
+        alert(`Item "${response.data.Name}" updated successfully!`);
+      } catch (error) {
+        console.error("Error updating item:", error.response ? error.response.data : error);
+        alert(`Failed to update item. ${error.response?.data?.message || 'Check console.'}`);
+      }
+    }
   };
 
   // Handle Delete Item
-  const handleDeleteItem = () => {
-    setShowItemInfo(false);
-    setSearchItem("");
+  const handleDeleteItem = async () => {
+    if (!currentItem || !window.confirm(`Are you sure you want to delete "${currentItem.Name}"?`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${baseUrl}/${currentItem.ID}`, { withCredentials: true });
+      alert(`Item "${currentItem.Name}" deleted successfully!`);
+      setCurrentItem(null);
+      setSearchItemName("");
+    } catch (error) {
+      console.error("Error deleting item:", error.response ? error.response.data : error);
+      alert(`Failed to delete item. ${error.response?.data?.message || 'Check console.'}`);
+    }
   };
 
+  // --- Render ---
   return (
     <div className="management-container">
       <h1>Item Management</h1>
-      
+
       <div className="management-grid">
         {/* Add Item Section */}
         <div className="management-section">
           <h2>Add Item</h2>
           <form onSubmit={handleAddItem}>
             <div className="form-group">
-              <label>
-                Name<span className="required">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Name of Item"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                required
-              />
+              <label>Name<span className="required">*</span></label>
+              <input type="text" placeholder="Name of Item" value={itemName} onChange={(e) => setItemName(e.target.value)} required />
             </div>
-
             <div className="form-group">
               <label>Author</label>
-              <input
-                type="text"
-                placeholder="First and Last"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-              />
+              <input type="text" placeholder="Author Name" value={author} onChange={(e) => setAuthor(e.target.value)} />
             </div>
-
             <div className="form-group">
               <label>Description</label>
-              <textarea
-                placeholder="Description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+              <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
-
-            <div className="form-group">
-              <label>Genre</label>
-              <input
-                type="text"
-                placeholder="Genre"
-                value={genre}
-                onChange={(e) => setGenre(e.target.value)}
-              />
-            </div>
-
-            <div className="form-row">
+            <div className="form-row"> {/* Group Genre and SubGenre */}
               <div className="form-group">
-                <input
-                  type="text"
-                  placeholder="Subgenre"
-                  value={subgenre}
-                  onChange={(e) => setSubgenre(e.target.value)}
-                />
+                <label>Genre ID<span className="required">*</span></label>
+                <input type="number" placeholder="Genre ID" value={genreId} onChange={(e) => setGenreId(e.target.value)} required />
               </div>
               <div className="form-group">
-                <select value={type} onChange={(e) => setType(e.target.value)}>
-                  <option value="Book">Book</option>
-                  <option value="Movie">Movie</option>
-                  <option value="Game">Game</option>
-                </select>
+                <label>SubGenre ID<span className="required">*</span></label>
+                <input type="number" placeholder="SubGenre ID" value={subgenreId} onChange={(e) => setSubgenreId(e.target.value)} required />
               </div>
             </div>
-
-            <button type="submit" className="btn-add">
-              Add Item
-            </button>
+             <div className="form-group">
+               <label>Published Date</label>
+               <input type="date" value={published} onChange={(e) => setPublished(e.target.value)} />
+             </div>
+            {/* Removed Type dropdown as it's implied by Genre/SubGenre in your API structure */}
+            <button type="submit" className="btn-add">Add Item</button>
           </form>
         </div>
 
@@ -121,33 +176,46 @@ const ItemManagement = () => {
         <div className="management-section">
           <h2>Edit/Delete Item</h2>
           <form onSubmit={handleSearchItem} className="search-box">
-            <label>
-              Name<span className="required">*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Search for Item"
-              value={searchItem}
-              onChange={(e) => setSearchItem(e.target.value)}
-              required
-            />
+            <div className="form-group">
+                <label>Search by Name<span className="required">*</span></label>
+                <input
+                  type="text"
+                  placeholder="Enter exact item name"
+                  value={searchItemName}
+                  onChange={(e) => setSearchItemName(e.target.value)}
+                  required
+                />
+            </div>
+            <button type="submit" className="btn-search" disabled={loadingSearch}>
+              {loadingSearch ? 'Searching...' : 'Search Item'}
+            </button>
           </form>
 
-          {showItemInfo && (
+          {searchError && <p className="error-message">{searchError}</p>}
+
+          {currentItem && (
             <>
               <div className="item-info">
-                <h3>User Info</h3>
-                <p><strong>Name:</strong> Book Name</p>
-                <p><strong>Author:</strong> John Smith</p>
-                <p><strong>Description:</strong> Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
-                <p><strong>Genre:</strong> Lorem ipsum</p>
-                <p><strong>Subgenre:</strong> Lorem ipsum</p>
-                <p><strong>Type:</strong> Book</p>
-              </div>
+                    <h3>Item Details</h3>
+                    <p><strong>ID:</strong> {currentItem.ID}</p>
+                    <p><strong>Name:</strong> {currentItem.Name}</p>
+                    <p><strong>Author:</strong> {currentItem.Author || 'N/A'}</p>
+                    <p><strong>Description:</strong> {currentItem.Description || 'N/A'}</p>
+                    <p><strong>Published:</strong> {currentItem.Published ? new Date(currentItem.Published).toLocaleDateString() : 'N/A'}</p>
+                    
+                    {/* --- CORRECTED LINE --- */}
+                    {/* Check if Genre is a number before rendering, handle object case */}
+                    <p><strong>Genre ID:</strong> {typeof currentItem.Genre === 'number' ? currentItem.Genre : 'N/A'}</p> 
+                    
+                    <p><strong>SubGenre ID:</strong> {currentItem.SubGenre}</p>
+                    <p><strong>Last Updated:</strong> {currentItem.LastUpdated ? new Date(currentItem.LastUpdated).toLocaleString() : 'N/A'}</p>
+                    <p><strong>Last Updated By:</strong> {currentItem.LastUpdatedBy || 'N/A'}</p>
+                    </div>
 
               <div className="button-row">
+                {/* Edit Button - Basic implementation */}
                 <button className="btn-edit" onClick={handleEditItem}>
-                  Edit Item
+                  Edit Description (Prompt)
                 </button>
                 <button className="btn-delete" onClick={handleDeleteItem}>
                   Delete Item

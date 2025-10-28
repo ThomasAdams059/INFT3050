@@ -14,6 +14,10 @@ const AdminAccount = () => {
     window.location.href = '/myAccount';
   };
 
+  const handleManagePatronsClick = () => {
+    window.location.href = '/patronManagement';
+  };
+
   return (
     <div className="main-container">
       <h1 className="main-heading custom-header-color">Admin Mode</h1>
@@ -59,6 +63,18 @@ const AdminAccount = () => {
           </ul>
           <button className="admin-manage-button" onClick={handleManageItemsClick}>
             Manage Items
+          </button>
+        </div>
+
+        <div className="admin-box">
+          <h2 className="admin-box-heading">Patron Management</h2>
+          <ul className="admin-task-list">
+            <li>Add New Patron</li>
+            <li>Edit Existing Patron</li>
+            <li>Delete Existing Patron</li>
+          </ul>
+          <button className="admin-manage-button" onClick={handleManageItemsClick}>
+            Manage Patrons
           </button>
         </div>
         

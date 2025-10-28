@@ -40,7 +40,6 @@ export default function Navbar({ isLoggedIn }) {
           <CustomLink href="/newReleases">New Releases</CustomLink>
           <CustomLink href="/bestSellers">Best Sellers</CustomLink>
           <CustomLink href="/author">Author</CustomLink>
-          <CustomLink href="/products">Products</CustomLink>
           
         </ul>
       </nav>

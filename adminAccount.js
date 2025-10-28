@@ -73,7 +73,7 @@ const AdminAccount = () => {
             <li>Edit Existing Patron</li>
             <li>Delete Existing Patron</li>
           </ul>
-          <button className="admin-manage-button" onClick={handleManageItemsClick}>
+          <button className="admin-manage-button" onClick={handleManagePatronsClick}>
             Manage Patrons
           </button>
         </div>

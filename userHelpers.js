@@ -28,13 +28,13 @@ const generateSalt = () => {
 const tryLoginUser = (username, password, setResult) => {
   // --- HARDCODED ADMIN CHECK (for testing purposes) ---
   // If the admin username is entered, immediately return success and true for isAdmin
-  if (username === 'adminAccount') {
+ /* if (username === 'adminAccount') {
     // Simulate a slight delay to mimic network latency
     setTimeout(() => {
         setResult({ status: "Success!", isAdmin: true });
     }, 50);
     return;
-  }
+  }*/
   // --- END HARDCODED ADMIN CHECK ---
 
   const headers = {
@@ -43,18 +43,25 @@ const tryLoginUser = (username, password, setResult) => {
   
   // POST credentials to login
   axios.post(API_PREFIX_SHORT + "/login", { username: username, password: password }, {
-    headers: headers, withCredentials: true
-  }).then((response) => { 
+    headers: headers, 
+    withCredentials: true
+  })
+  .then((response) => { //success
     console.log(response);
+
+    // shows isAdmin status from API response
+    const isAdmin = response.data.user?.IsAdmin === 'true' || 
+                    response.data.user?.IsAdmin === true ||
+                    response.data.user?.IsAdmin === 1;
 
     // Extract isAdmin status from the API response
     // Convert string boolean ('true'/'false') to actual boolean
-    const isAdmin = response.data.user?.IsAdmin === 'true'; 
+   // const isAdmin = response.data.user?.IsAdmin === 'true'; 
 
-    setResult({ status: "Success!", isAdmin: isAdmin });
+    setResult({ status: "Success!", isAdmin: isAdmin, user: response.data.user});
   }).catch((error) => {
-    console.error("Login Error:", error);
-    setResult({ status: "Error :(", isAdmin: false });
+    console.log(error);
+    setResult({ status: "Error :(", isAdmin: false, error: error.response?.data?.message || "Login failed"});
   });
 };
 
@@ -88,6 +95,14 @@ const tryAddNewUser = async (fullName, email, password, address, postcode, state
   }).catch(error => {
     console.error('Error posting data:', error);
     setResult("Fail");
+
+    //extra steps 
+    if (error.response?.status === 401) {
+      console.error(" NOT AUTHENTICATED - You must login first!");
+      setResult("Fail - Not authenticated");
+    } else {
+      setResult("Fail");
+    }
   });
 };
 

@@ -15,7 +15,6 @@ import AdminAccount from "./adminAccount";
 import AccountSettings from "./accountSettings"; 
 import UserManagement from "./userManagement";   
 import ItemManagement from "./itemManagement"; 
-import PatronManagement from './patronManagement';
 import MyAccount from "./myAccount";
 import OrderHistory from "./orderHistory";
 import './styles.css';
@@ -24,8 +23,16 @@ import PaymentMethods from './paymentMethod';
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    // Initialize from sessionStorage
+    return sessionStorage.getItem('isLoggedIn') === 'true';
+  });
 
+  const [isAdmin, setIsAdmin] = useState(() => {
+    return sessionStorage.getItem('isAdmin') === 'true';
+  });
+
+  
   const handleAddToCart = (item) => {
     setCartItems(prevItems => [...prevItems, item]);
     alert(`${item.name} has been added to your cart!`);
@@ -33,10 +40,15 @@ function App() {
   };
 
   const handleLogin = (isAdmin = false) => {
-    setIsLoggedIn(true);
-    // Redirect admin users to the Admin Dashboard, others to the homepage (or account settings)
-    window.location.href = isAdmin ? '/adminAccount' : '/adminAccount';
-  };
+  setIsLoggedIn(true);
+  // Store login state in sessionStorage so it persists across page reloads
+  sessionStorage.setItem('isLoggedIn', 'true');
+  sessionStorage.setItem('isAdmin', isAdmin.toString());
+  
+  // Redirect
+  window.location.href = isAdmin ? '/adminAccount' : '/accountSettings';
+};
+  
 
   let component;
   switch (window.location.pathname) {
@@ -81,9 +93,6 @@ function App() {
       break;
     case "/itemManagement": 
       component = <ItemManagement />;
-      break;
-    case "/patronManagement":
-    component = <PatronManagement />;
       break;
     case "/myAccount":
       component = <MyAccount />;

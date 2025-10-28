@@ -15,6 +15,7 @@ import AdminAccount from "./adminAccount";
 import AccountSettings from "./accountSettings"; 
 import UserManagement from "./userManagement";   
 import ItemManagement from "./itemManagement"; 
+import PatronManagement from './patronManagement';
 import MyAccount from "./myAccount";
 import OrderHistory from "./orderHistory";
 import './styles.css';
@@ -34,7 +35,7 @@ function App() {
   const handleLogin = (isAdmin = false) => {
     setIsLoggedIn(true);
     // Redirect admin users to the Admin Dashboard, others to the homepage (or account settings)
-    window.location.href = isAdmin ? '/adminAccount' : '/accountSettings';
+    window.location.href = isAdmin ? '/adminAccount' : '/adminAccount';
   };
 
   let component;
@@ -80,6 +81,9 @@ function App() {
       break;
     case "/itemManagement": 
       component = <ItemManagement />;
+      break;
+    case "/patronManagement":
+    component = <PatronManagement />;
       break;
     case "/myAccount":
       component = <MyAccount />;

@@ -19,7 +19,7 @@ const PatronManagement = () => {
         setError(null);
       } catch (err) {
         console.error("Error fetching patrons:", err);
-        setError("Failed to fetch patrons. Please check the API.");
+        setError("Failed to fetch patrons.");
       } finally {
         setLoading(false);
       }

@@ -1,25 +1,25 @@
-import { useState } from "react";
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-
 const PatronManagement = () => {
-  // Add Patron state
   const [patrons, setPatrons] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] useState(null);
+  const [error, setError] = useState(null);
 
+  // API base URL
   const baseUrl = "http://localhost:3001/api/inft3050/Patrons";
 
-  useEffect (() => {
+  // Fetch all patrons
+  useEffect(() => {
     const fetchPatrons = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(baseUrl, {withCredentials: true});
+        const response = await axios.get(baseUrl, { withCredentials: true });
         setPatrons(response.data.list || []);
         setError(null);
       } catch (err) {
-        console.error("Error fetching patrons:" err);
-        setError("Failed to fetch patrons.");
+        console.error("Error fetching patrons:", err);
+        setError("Failed to fetch patrons. Please check the API.");
       } finally {
         setLoading(false);
       }
@@ -27,10 +27,12 @@ const PatronManagement = () => {
     fetchPatrons();
   }, []);
 
+  // Handle Edit Patron
   const handleEdit = (patron) => {
-    alert('Editing patron: ${patron.Name} (ID: ${patron.UserID})');
+    alert(`Editing patron: ${patron.Name} (ID: ${patron.UserID})`);
   };
 
+  // Handle Delete Patron
   const handleDelete = async (patronId, patronName) => {
     if (window.confirm(`Are you sure you want to delete "${patronName}"? This action cannot be undone.`)) {
       try {
@@ -47,6 +49,7 @@ const PatronManagement = () => {
     }
   };
 
+  // --- Render ---
   return (
     <div className="management-container">
       <h1>Patron Management</h1>

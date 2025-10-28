@@ -26,17 +26,6 @@ const generateSalt = () => {
 /* Axios database calls */
 // Login user
 const tryLoginUser = (username, password, setResult) => {
-  // --- HARDCODED ADMIN CHECK (for testing purposes) ---
-  // If the admin username is entered, immediately return success and true for isAdmin
- /* if (username === 'adminAccount') {
-    // Simulate a slight delay to mimic network latency
-    setTimeout(() => {
-        setResult({ status: "Success!", isAdmin: true });
-    }, 50);
-    return;
-  }*/
-  // --- END HARDCODED ADMIN CHECK ---
-
   const headers = {
     'Accept': 'application/json',
   };
@@ -46,22 +35,37 @@ const tryLoginUser = (username, password, setResult) => {
     headers: headers, 
     withCredentials: true
   })
-  .then((response) => { //success
-    console.log(response);
+  .then((response) => { 
+    console.log("=== USERHELPER DEBUG ===");
+    console.log("1. Full axios response:", response);
+    console.log("2. response.data:", response.data);
+    console.log("3. response.data.isAdmin:", response.data.isAdmin);
+    console.log("4. Type of response.data.isAdmin:", typeof response.data.isAdmin);
 
-    // shows isAdmin status from API response
-    const isAdmin = response.data.user?.IsAdmin === 'true' || 
-                    response.data.user?.IsAdmin === true ||
-                    response.data.user?.IsAdmin === 1;
+    // Check for isAdmin in different possible formats
+    const isAdmin = response.data.isAdmin === true || 
+                    response.data.isAdmin === 'true' ||
+                    response.data.isAdmin === 1;
 
-    // Extract isAdmin status from the API response
-    // Convert string boolean ('true'/'false') to actual boolean
-   // const isAdmin = response.data.user?.IsAdmin === 'true'; 
+    console.log("5. Extracted isAdmin value:", isAdmin);
 
-    setResult({ status: "Success!", isAdmin: isAdmin, user: response.data.user});
+    const resultObject = { 
+      status: "Success!", 
+      isAdmin: isAdmin, 
+      user: response.data
+    };
+
+    console.log("6. Result object being sent:", resultObject);
+
+    setResult(resultObject);
   }).catch((error) => {
+    console.log("=== LOGIN ERROR ===");
     console.log(error);
-    setResult({ status: "Error :(", isAdmin: false, error: error.response?.data?.message || "Login failed"});
+    setResult({ 
+      status: "Error :(", 
+      isAdmin: false, 
+      error: error.response?.data?.message || "Login failed"
+    });
   });
 };
 

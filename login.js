@@ -10,15 +10,6 @@ const Login = ({ onLogin }) => {
     event.preventDefault(); // Prevent reloading of the page
     if (username && password) {
       
-      // --- HARDCODED ADMIN CHECK ---
-      //if (username === 'adminAccount') {
-          // Bypass API check for the admin account and redirect directly to the admin page
-          // Pass 'true' for isAdmin status
-          /*onLogin(true); 
-          return;
-      }*/
-      // --- END HARDCODED ADMIN CHECK ---
-      
       const resultHandler = (result) => {
 
         //new error log

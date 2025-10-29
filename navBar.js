@@ -1,9 +1,18 @@
 import React from 'react';
 
-export default function Navbar({ isLoggedIn }) {
-    // Determine the correct link destination for the Account button
-    const accountHref = isLoggedIn ? "/accountSettings" : "/login"; 
+// --- 1. ACCEPT 'isAdmin' and 'onLogout' PROPS ---
+export default function Navbar({ isLoggedIn, isAdmin, onLogout }) {
     
+    // Handle logout click
+    const handleLogoutClick = (e) => {
+      e.preventDefault(); 
+      onLogout();
+    };
+
+    const accountHref = isLoggedIn 
+      ? (isAdmin ? "/adminAccount" : "/myAccount") 
+      : "/login";
+
     return (
       <nav className="nav">
         <a href="/" className="site-title">The Entertainment Guild</a>
@@ -15,32 +24,54 @@ export default function Navbar({ isLoggedIn }) {
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
           </button>
-
         </div>
         <ul>
-      {/* Account Icon: Href changes based on login status */}
-          <CustomLink href={accountHref}> 
-          <img 
-              src= '/account.svg'
-              alt="Account"
-              style={{width: "20px", height: "20px",marginRight: "6px"}} />
-          Account
-          </CustomLink>
-          
-      {/* for cart icon */}
-           <CustomLink href="/Cart">
-          <img 
-              src= '/cart.svg'
-              alt="Cart"
-              style={{width: "20px", height: "20px",marginRight: "6px"}} />
-          Cart
+          {/* --- Conditionally show Account or Logout --- */}
+          {isLoggedIn ? (
+            <>
+              {/* --- 3. USE 'accountHref' VARIABLE --- */}
+              <CustomLink href={accountHref}>
+                <img 
+                    src= '/account.svg'
+                    alt="Account"
+                    style={{width: "20px", height: "20px",marginRight: "6px"}} />
+                Account
+              </CustomLink>
+              {/* Show Logout link */}
+              <li>
+                <a href="/logout" onClick={handleLogoutClick} style={{display: 'flex', alignItems: 'center'}}>
+                  <img 
+                      src= '/logout.svg' // You'll need to add a logout.svg to your public folder
+                      alt="Logout"
+                      style={{width: "20px", height: "20px",marginRight: "6px"}} />
+                  Logout
+                </a>
+              </li>
+            </>
+          ) : (
+            // Show Login link (accountHref is /login here)
+            <CustomLink href={accountHref}> 
+              <img 
+                  src= '/account.svg'
+                  alt="Account"
+                  style={{width: "20px", height: "20px",marginRight: "6px"}} />
+              Account
+            </CustomLink> 
+          )}
+          {/* --- End Conditional Section --- */}
+
+          <CustomLink href="/Cart">
+            <img 
+                src= '/cart.svg'
+                alt="Cart"
+                style={{width: "20px", height: "20px",marginRight: "6px"}} />
+            Cart
           </CustomLink>
         
           <CustomLink href="/genre">Genre</CustomLink>
           <CustomLink href="/newReleases">New Releases</CustomLink>
           <CustomLink href="/bestSellers">Best Sellers</CustomLink>
           <CustomLink href="/author">Author</CustomLink>
-          
         </ul>
       </nav>
     );

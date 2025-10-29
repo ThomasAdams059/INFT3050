@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import ProductCard from './productCard';
+import ProductCard from './productCard'; // Import ProductCard
 
-const API_BASE_URL = "http://localhost:3001";
-const API_SUFFIX = "/api/inft3050";
+// Removed API_BASE_URL and API_SUFFIX constants
 
+// --- CartItem Component (Includes Remove Button) ---
 const CartItem = ({ item, onRemove }) => {
   if (!item) return null;
 
@@ -32,76 +32,97 @@ const CartItem = ({ item, onRemove }) => {
   );
 };
 
-
+// --- Updated CartPage Component ---
 const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
+  // State for cart items
   const [cartItems, setCartItems] = useState([]);
-  const [loadingCart, setLoadingCart] = useState(true); // Renamed for clarity
-  const [cartError, setCartError] = useState(null);    // Renamed for clarity
+  const [loadingCart, setLoadingCart] = useState(true);
+  const [cartError, setCartError] = useState(null);
   const [cartTotal, setCartTotal] = useState(0);
 
+  // State for recommended items
   const [recommendedItems, setRecommendedItems] = useState([]);
   const [loadingRecs, setLoadingRecs] = useState(true);
   const [recsError, setRecsError] = useState(null);
 
-  // Fetch cart items (useEffect remains largely the same)
+  // --- Fetch Cart Items ---
   useEffect(() => {
     const fetchCartItems = async () => {
-      // ... (previous fetchCartItems logic remains the same)
       if (!isLoggedIn || isAdmin || !activeOrderId) {
         setLoadingCart(false);
+        setCartItems([]);
+        setCartTotal(0);
         return;
       }
+
       setLoadingCart(true);
       setCartError(null);
       try {
-        const itemsResponse = await axios.get(`${API_BASE_URL}${API_SUFFIX}/ProductsInOrders?filter[OrderId]=${activeOrderId}`, { withCredentials: true });
+        console.log("Fetching items for OrderID:", activeOrderId);
+        // --- Use full URL ---
+        const itemsResponse = await axios.get(`http://localhost:3001/api/inft3050/ProductsInOrders?filter[OrderId]=${activeOrderId}`, { withCredentials: true });
         const orderItems = itemsResponse.data.list || [];
+
         if (orderItems.length === 0) {
-           setCartItems([]); setCartTotal(0); setLoadingCart(false); return;
+           setCartItems([]);
+           setCartTotal(0);
+           setLoadingCart(false);
+           return;
         }
+
         const detailedItems = await Promise.all(
           orderItems.map(async (orderItem) => {
             try {
-              const stocktakeResponse = await axios.get(`${API_BASE_URL}${API_SUFFIX}/Stocktake/${orderItem.produktId}`, { withCredentials: true });
+              // --- Use full URLs ---
+              const stocktakeResponse = await axios.get(`http://localhost:3001/api/inft3050/Stocktake/${orderItem.produktId}`, { withCredentials: true });
               const stockItem = stocktakeResponse.data;
-              const productResponse = await axios.get(`${API_BASE_URL}${API_SUFFIX}/Product/${stockItem.ProductId}`, { withCredentials: true });
+              const productResponse = await axios.get(`http://localhost:3001/api/inft3050/Product/${stockItem.ProductId}`, { withCredentials: true });
               const productDetails = productResponse.data;
               return {
                 productsInOrdersId: orderItem.rowId, stockItemId: orderItem.produktId, productId: stockItem.ProductId,
                 name: productDetails.Name, price: stockItem.Price, quantity: orderItem.Quantity,
-                image: 'https://placehold.co/100x150/F4F4F5/18181B?text=Book' // Placeholder
+                image: 'https://placehold.co/100x150/F4F4F5/18181B?text=Book'
               };
-            } catch (detailError) { console.error(`Error fetching details for item ${orderItem.produktId}:`, detailError); return null; }
+            } catch (detailError) {
+              console.error(`Error fetching details for cart item ${orderItem.produktId}:`, detailError);
+              return null;
+            }
           })
         );
+
         const validItems = detailedItems.filter(item => item !== null);
         setCartItems(validItems);
         const total = validItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         setCartTotal(total);
+
       } catch (err) {
         console.error("Error fetching cart items:", err);
         setCartError("Failed to load cart items. Please try refreshing.");
-        setCartItems([]); setCartTotal(0);
-      } finally { setLoadingCart(false); }
+        setCartItems([]);
+        setCartTotal(0);
+      } finally {
+        setLoadingCart(false);
+      }
     };
+
     fetchCartItems();
   }, [activeOrderId, isLoggedIn, isAdmin]);
 
+  // --- Fetch Recommended Items ---
   useEffect(() => {
     const fetchRecommendations = async () => {
       setLoadingRecs(true);
       setRecsError(null);
       try {
-        // Fetch all products and stocktake items
+        // --- Use full URLs ---
         const [productResponse, stocktakeResponse] = await Promise.all([
-          axios.get(`${API_BASE_URL}${API_SUFFIX}/Product`),
-          axios.get(`${API_BASE_URL}${API_SUFFIX}/Stocktake`)
+          axios.get("http://localhost:3001/api/inft3050/Product"),
+          axios.get("http://localhost:3001/api/inft3050/Stocktake")
         ]);
 
         const allProducts = productResponse.data.list || [];
         const stocktakeItems = stocktakeResponse.data.list || [];
 
-        // Create a price map
         const priceMap = {};
         stocktakeItems.forEach(item => {
           if (item.SourceId === 1 && item.Price) {
@@ -109,18 +130,17 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
           }
         });
 
-        // Combine product data with prices
         const allPricedProducts = allProducts.map(product => ({
           id: product.ID,
           name: product.Name,
           price: priceMap[product.ID] ? `$${priceMap[product.ID].toFixed(2)}` : 'Price N/A',
-          image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' // Placeholder
-        })).filter(p => p.price !== 'Price N/A'); // Filter out items without price for recommendations
+          author: product.Author,
+          description: product.Description,
+          image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book'
+        })).filter(p => p.price !== 'Price N/A');
 
-        // --- Select 5 Random Items ---
-        const shuffled = allPricedProducts.sort(() => 0.5 - Math.random()); // Simple shuffle
-        const selectedRecs = shuffled.slice(0, 5); // Get the first 5
-
+        const shuffled = allPricedProducts.sort(() => 0.5 - Math.random());
+        const selectedRecs = shuffled.slice(0, 5);
         setRecommendedItems(selectedRecs);
 
       } catch (err) {
@@ -134,12 +154,13 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
     fetchRecommendations();
   }, []);
 
-
+  // --- Handle Remove Item from Cart ---
   const handleRemoveItem = async (productsInOrdersId) => {
       if (!productsInOrdersId) return;
       try {
-          await axios.delete(`${API_BASE_URL}${API_SUFFIX}/ProductsInOrders/${productsInOrdersId}`, { withCredentials: true });
-          const removedItem = cartItems.find(item => item.productsInOrdersId === productsInOrdersId); // Find before filtering
+          // --- Use full URL ---
+          await axios.delete(`http://localhost:3001/api/inft3050/ProductsInOrders/${productsInOrdersId}`, { withCredentials: true });
+          const removedItem = cartItems.find(item => item.productsInOrdersId === productsInOrdersId);
           setCartItems(prevItems => prevItems.filter(item => item.productsInOrdersId !== productsInOrdersId));
           setCartTotal(prevTotal => removedItem ? prevTotal - (removedItem.price * removedItem.quantity) : prevTotal);
           alert("Item removed from cart.");
@@ -149,14 +170,14 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
       }
   };
 
-  // Handle clicking recommendation cards
+  // --- Handle Click on Recommendation Card ---
   const handleCardClick = (productId) => {
     window.location.href = `/products?id=${productId}`;
   };
 
-
+  // --- Conditional Rendering for Login/Admin Status ---
   if (!isLoggedIn) {
-     return (
+    return (
       <div className="main-container">
         <h1>Cart</h1>
         <p>Please log in to view your cart.</p>
@@ -165,8 +186,7 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
     );
   }
   if (isAdmin) {
-      // ... (previous code)
-       return (
+      return (
           <div className="main-container">
               <h1>Cart</h1>
               <p>Admins do not have a shopping cart.</p>
@@ -174,6 +194,7 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
       );
   }
 
+  // --- Render Cart and Recommendations ---
   return (
     <div className="main-container">
       <div className="cart-layout">
@@ -181,7 +202,6 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
           <h1 className="cart-heading">Cart</h1>
           {loadingCart && <p>Loading cart...</p>}
           {cartError && <p className="error-message">{cartError}</p>}
-
           {!loadingCart && !cartError && (
             <>
               <div className="cart-items-container">
@@ -206,20 +226,21 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
           )}
         </div>
 
-        {/* --- 4. RE-ADD Recommended Items Section --- */}
         <div className="recommended-box">
           <h1 className="recommended-heading">Recommended For You</h1>
           {loadingRecs && <p>Loading recommendations...</p>}
           {recsError && <p className="error-message">{recsError}</p>}
           {!loadingRecs && !recsError && (
-            <div className="recommended-items-container">
+            <div className="recommended-items-container-updated">
               {recommendedItems.length > 0 ? (
                 recommendedItems.map(product => (
                   <ProductCard
                     key={product.id}
                     imageSrc={product.image}
-                    productName={product.name} // Use correct prop
+                    productName={product.name}
                     price={product.price}
+                    author={product.author}
+                    description={product.description}
                     onClick={() => handleCardClick(product.id)}
                   />
                 ))
@@ -229,8 +250,7 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
             </div>
           )}
         </div>
-
-      </div> 
+      </div>
     </div>
   );
 };

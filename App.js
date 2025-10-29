@@ -64,6 +64,7 @@ function App() {
     } catch (error) {
       console.error("Error during logout:", error);
     } finally {
+      alert("Logout Successful.");
       setIsLoggedIn(false);
       setIsAdmin(false);
       window.location.href = "/";

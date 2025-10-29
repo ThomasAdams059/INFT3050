@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react'; // Import useEffect
-import axios from 'axios'; // Import axios
+import React, { useState } from 'react';
 import Navbar from "./navBar"
 import HomePage from "./homepage"
 import Genre from "./genre"
@@ -16,7 +15,6 @@ import AdminAccount from "./adminAccount";
 import AccountSettings from "./accountSettings"; 
 import UserManagement from "./userManagement";   
 import ItemManagement from "./itemManagement"; 
-import PatronManagement from './patronManagement';
 import MyAccount from "./myAccount";
 import OrderHistory from "./orderHistory";
 import './styles.css';
@@ -25,28 +23,16 @@ import PaymentMethods from './paymentMethod';
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); // <-- 1. ADDED ADMIN STATE
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    // Initialize from sessionStorage
+    return sessionStorage.getItem('isLoggedIn') === 'true';
+  });
 
-  // Check session on initial app load
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      try {
-        const response = await axios.get("http://localhost:3001/me", { withCredentials: true });
-        setIsLoggedIn(true);
-        // --- 2. SET ADMIN STATUS ON LOAD ---
-        if (response.data && response.data.isAdmin === true) {
-          setIsAdmin(true);
-        }
-      } catch (error) {
-        setIsLoggedIn(false);
-        setIsAdmin(false); // Ensure reset on error
-      }
-    };
-    
-    checkLoginStatus();
-  }, []); // Empty array means this runs only once on mount
+  const [isAdmin, setIsAdmin] = useState(() => {
+    return sessionStorage.getItem('isAdmin') === 'true';
+  });
 
+  
   const handleAddToCart = (item) => {
     setCartItems(prevItems => [...prevItems, item]);
     alert(`${item.name} has been added to your cart!`);
@@ -54,24 +40,15 @@ function App() {
   };
 
   const handleLogin = (isAdmin = false) => {
-    setIsLoggedIn(true);
-    setIsAdmin(isAdmin); // <-- 3. SET ADMIN STATUS ON LOGIN
-    
-    // This redirect is correct for admin, but regular users should go to /myAccount
-    window.location.href = isAdmin ? '/adminAccount' : '/myAccount';
-  };
-
-  const handleLogout = async () => {
-    try {
-      await axios.post("http://localhost:3001/logout", {}, { withCredentials: true });
-    } catch (error) {
-      console.error("Error during logout:", error);
-    } finally {
-      setIsLoggedIn(false);
-      setIsAdmin(false); // <-- 3. RESET ADMIN STATUS ON LOGOUT
-      window.location.href = "/";
-    }
-  };
+  setIsLoggedIn(true);
+  // Store login state in sessionStorage so it persists across page reloads
+  sessionStorage.setItem('isLoggedIn', 'true');
+  sessionStorage.setItem('isAdmin', isAdmin.toString());
+  
+  // Redirect
+  window.location.href = isAdmin ? '/adminAccount' : '/dminAccount';
+};
+  
 
   let component;
   switch (window.location.pathname) {
@@ -108,14 +85,14 @@ function App() {
     case "/adminAccount":
       component = <AdminAccount />;
       break;
+    case "/accountSettings": 
+      component = <AccountSettings />;
+      break;
     case "/userManagement": 
       component = <UserManagement />;
       break;
     case "/itemManagement": 
       component = <ItemManagement />;
-      break;
-    case "/patronManagement":
-    component = <PatronManagement />;
       break;
     case "/myAccount":
       component = <MyAccount />;
@@ -123,7 +100,7 @@ function App() {
     case "/orderHistory":
       component = <OrderHistory />;
       break;
-    case "/accountSettings": 
+    case "/accountSettings":
       component = <AccountSettings />;
       break;
     case "/addressBook":
@@ -138,9 +115,7 @@ function App() {
   }
   return (
     <>
-      {/* --- 4. PASS 'isAdmin' and 'onLogout' PROPS TO NAVBAR --- */}
-      <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} onLogout={handleLogout} />
-      
+      <Navbar isLoggedIn={isLoggedIn} />
       <div className="container">
         {component}
       </div>

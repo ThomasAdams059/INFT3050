@@ -81,7 +81,7 @@ const tryLoginPatron = (email, password, setResult) => {
 
  axios.get(API_PREFIX_LONG + "/Patrons", {
     headers: headers,
-    withCredentials: true
+    // withCredentials: true
   })
   .then((response) => {
     console.log("Patrons response:", response.data);
@@ -97,7 +97,7 @@ const tryLoginPatron = (email, password, setResult) => {
 
     const patrons = response.data.list;
     
-    // Find patron with matching email (case-insensitive)
+    // find the patron with matching email case sensitive
     const patron = patrons.find(p => 
       p.Email.toLowerCase() === email.toLowerCase()
     );

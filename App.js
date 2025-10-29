@@ -26,7 +26,7 @@ import PaymentMethods from './paymentMethod';
 function App() {
   const [cartItems, setCartItems] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); // <-- 1. ADDED ADMIN STATE
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Check session on initial app load
   useEffect(() => {
@@ -56,7 +56,7 @@ function App() {
 
   const handleLogin = (isAdmin = false) => {
     setIsLoggedIn(true);
-    setIsAdmin(isAdmin); // <-- 3. SET ADMIN STATUS ON LOGIN
+    setIsAdmin(isAdmin);
     
     // --- 5. FIXED REDIRECT BUG ---
     window.location.href = isAdmin ? '/adminAccount' : '/accountSettings';
@@ -69,7 +69,7 @@ function App() {
       console.error("Error during logout:", error);
     } finally {
       setIsLoggedIn(false);
-      setIsAdmin(false); // <-- 3. RESET ADMIN STATUS ON LOGOUT
+      setIsAdmin(false);
       window.location.href = "/";
     }
   };
@@ -124,7 +124,7 @@ function App() {
     case "/orderHistory":
       component = <OrderHistory />;
       break;
-    case "/accountSettings": // <-- 6. REMOVED DUPLICATE
+    case "/accountSettings": 
       component = <AccountSettings />;
       break;
     case "/addressBook":
@@ -139,7 +139,6 @@ function App() {
   }
   return (
     <>
-      {/* --- 4. PASS 'isAdmin' PROP TO NAVBAR --- */}
       <Navbar isLoggedIn={isLoggedIn} isAdmin={isAdmin} onLogout={handleLogout} />
       
       <div className="container">

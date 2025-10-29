@@ -144,6 +144,11 @@ const UserManagement = () => {
     setErrorMessage("");
     setSuccessMessage("");
     setShowUserInfo(false); //changed from true
+    setFoundUser(null);
+
+    // for error log
+    console.log("Searching for user:", searchUser);
+    console.log("Making GET request to:", `${baseUrl}/User`);
 
     axios.get(
       `${baseUrl}/User`,
@@ -151,19 +156,41 @@ const UserManagement = () => {
         headers: {
           'Accept': 'application/json'
         },
-        withCredentials: true 
+       withCredentials: true 
       }
     )
 
     .then((response) => {
+
+      console.log("Response received:", response);
+      console.log("Response data:", response.data);
+
+      
+      // to see if response has the expected structure
+      if (!response.data || !response.data.list) {
+      console.error("Unexpected response structure:", response.data);
+      setErrorMessage("Unexpected data format from server");
+      setIsLoading(false);
+      return;
+    }
+
+
+
+
+
       const users = response.data.list; //array like handleAddUser
+
+      // more error logging
+      console.log("Total users found:", users.length);
+      console.log("Users array:", users);
 
       // searches for user converting it to lowercase for case sensitivity
       const user = users.find(u =>
-        u.UserName.toLowerCase()=== searchUser.toLowerCase() 
+        u.UserName.toLowerCase() === searchUser.toLowerCase() 
       );
 
       if (user) {
+        console.log("User found:", user);
         // user found and is stored
         setFoundUser(user);
 
@@ -186,9 +213,40 @@ const UserManagement = () => {
     })
     .catch((error) => {
       console.error("Error searching user:", error);
-      setErrorMessage("Failed to search for user. Please try again.");
-      setIsLoading(false); 
-    })
+      console.error("Error details:", {
+      message: error.message,
+      response: error.response,
+      status: error.response?.status,
+      data: error.response?.data
+      
+    });
+
+     let errorMsg = "Failed to search for user. ";
+    
+    if (error.response) {
+      // Server responded with error status
+      const status = error.response.status;
+      
+      if (status === 401 || status === 403) {
+        errorMsg += "Authentication required. Please log in as admin first.";
+      } else if (status === 404) {
+        errorMsg += "User endpoint not found. Check the API URL.";
+      } else if (status === 500) {
+        errorMsg += "Server error. Please try again later.";
+      } else {
+        errorMsg += `Server error (${status}). ${error.response.data?.message || ''}`;
+      }
+    } else if (error.request) {
+      // Request made but no response received
+      errorMsg += "No response from server. Is Docker running?";
+    } else {
+      // Error in setting up the request
+      errorMsg += error.message;
+    }
+
+    setErrorMessage(errorMsg);
+    setIsLoading(false);
+  });
   };
 
 
@@ -215,15 +273,15 @@ const UserManagement = () => {
     setSuccessMessage("");
 
     // changes or upadtes the new values
-    const updatedUser = {
-      ...foundUser, //copy all existing properties
+    const updatedFields = {
+    // only these can be updated not id or password or anything else
       Name: newName,
       Email: newEmail
     };
 
-    axios.put(
-      `${baseUrl}/User/${foundUser.ID}`,
-      updatedUser,                         // Request body (updated user data)
+    axios.patch(
+      `${baseUrl}/User/${foundUser.UserID}`,
+      updatedFields,                         // only fields that are to be updated sent
       {
         headers: { 
           'Accept': 'application/json',
@@ -237,7 +295,13 @@ const UserManagement = () => {
       setSuccessMessage(`User "${foundUser.UserName}" updated successfully!`);
 
       // update the user info to display
-      setFoundUser(updatedUser);
+      //setFoundUser(updatedUser);
+
+      setFoundUser({
+      ...foundUser,
+      Name: newName,
+      Email: newEmail
+    });
 
       // back to false
       setIsLoading(false);
@@ -258,18 +322,18 @@ const UserManagement = () => {
 
     if (!foundUser) return;
 
-    const confirmDelete = window.confirm(`Are you sure you want to delete user "${foundUser.UserName}"? This action cannot be undone.`
-    );
+    const confirmDelete = window.confirm(`Are you sure you want to delete user "${foundUser.UserName}"? This action cannot be undone.`);
 
     if (!confirmDelete) return;
     setIsLoading(true);
-    
-    // Clear messages
     setErrorMessage("");
     setSuccessMessage("");
+
+    console.log("Deleting user with ID:", foundUser.UserID);
+    console.log("DELETE URL:", `${baseUrl}/User/${foundUser.UserID}`);
     
     axios.delete(
-      `${baseUrl}/User/${foundUser.ID}`,  
+      `${baseUrl}/User/${foundUser.UserID}`,  
       {
         headers: { 
           'Accept': 'application/json'

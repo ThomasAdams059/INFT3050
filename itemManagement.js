@@ -6,55 +6,105 @@ const ItemManagement = () => {
   const [itemName, setItemName] = useState("");
   const [author, setAuthor] = useState("");
   const [description, setDescription] = useState("");
-  const [genreId, setGenreId] = useState(""); // Added Genre ID state
+  const [genreId, setGenreId] = useState(""); // added Genre ID state
   const [subgenreId, setSubgenreId] = useState(""); // Renamed for clarity
   const [published, setPublished] = useState(""); // Date as string
 
   // Edit/Delete Item state
   const [searchItemName, setSearchItemName] = useState("");
   const [currentItem, setCurrentItem] = useState(null);
+  const [showItemInfo, setShowItemInfo] = useState(false);
   const [loadingSearch, setLoadingSearch] = useState(false);
-  const [searchError, setSearchError] = useState(null);
+  const [searchError, setSearchError] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   // API base URL
   const baseUrl = "http://localhost:3001/api/inft3050/Product";
 
-  // --- API Functions ---
+ 
+  // all the search edit delete functions are taken from user management page.
 
-  // Handle Add Item
-  const handleAddItem = async (event) => {
+  // Handles Add Item
+const handleAddItem = (event) => {
     event.preventDefault();
+
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
     const newItem = {
       Name: itemName,
-      Author: author || null, // Allow empty author
-      Description: description || null, // Allow empty description
-      Genre: parseInt(genreId, 10), // Parse to integer
-      SubGenre: parseInt(subgenreId, 10), // Parse to integer
+      Author: author || null,
+      Description: description || null,
+      Genre: parseInt(genreId, 10),
+      SubGenre: parseInt(subgenreId, 10),
       Published: published ? new Date(published).toISOString() : null,
-      LastUpdatedBy: "adminAccount", // Example user
+      LastUpdatedBy: "adminAccount",
       LastUpdated: new Date().toISOString(),
     };
 
-    // Basic validation
+    // some basic validation inspo taken from doms og code
     if (!itemName || isNaN(newItem.Genre) || isNaN(newItem.SubGenre)) {
-      alert("Please fill in required fields (Name, Genre ID, SubGenre ID).");
+      setErrorMessage("Please fill in required fields (Name, Genre ID, SubGenre ID).");
+      setIsLoading(false);
       return;
     }
 
-    try {
-      const response = await axios.post(baseUrl, newItem, { withCredentials: true });
-      alert(`Item "${response.data.Name}" added successfully! ID: ${response.data.ID}`);
-      // Clear form
+    axios.post(
+      baseUrl,
+      newItem,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      }
+    )
+    .then((response) => {
+      console.log("Item added successfully:", response.data);
+      setSuccessMessage(`Item "${itemName}" added successfully! ID: ${response.data.ID}`);
+
+      // clears form
       setItemName("");
       setAuthor("");
       setDescription("");
       setGenreId("");
       setSubgenreId("");
       setPublished("");
-    } catch (error) {
-      console.error("Error adding item:", error.response ? error.response.data : error);
-      alert(`Failed to add item. ${error.response?.data?.message || 'Check console.'}`);
-    }
+
+      setIsLoading(false);
+    })
+    .catch((error) => {
+      console.error("Error adding item:", error);
+      console.error("Error response:", error.response);
+
+       // added just to check what error if any delete later ! delete everything from here to  line 99
+      let errorMsg = "Failed to add item. ";
+
+      if (error.response) {
+        const status = error.response.status;
+        if (status === 401 || status === 403) {
+          errorMsg += "Authentication required. Please log in as admin.";
+        } else if (status === 400) {
+          errorMsg += error.response.data?.message || "Invalid data format.";
+        } else if (status === 500) {
+          errorMsg += "Server error. Please try again later.";
+        } else {
+          errorMsg += `Server error (${status}). ${error.response.data?.message || ''}`;
+        }
+      } else if (error.request) {
+        errorMsg += "No response from server. Is Docker running?";
+      } else {
+        errorMsg += error.message;
+      }
+
+      setErrorMessage(errorMsg);
+      setIsLoading(false);
+    });
   };
 
   // Handle Search Item by Name
@@ -85,51 +135,147 @@ const ItemManagement = () => {
   };
 
   // Handle Edit Item (Placeholder - a real edit needs a form)
-  const handleEditItem = async () => {
+ const handleEditItem = () => {
     if (!currentItem) return;
 
     const newDescription = prompt("Enter new description:", currentItem.Description);
-    if (newDescription !== null) {
-      // Prepare the data matching the API structure
-      const updatedItemData = {
-        ID: currentItem.ID, // Keep the ID
-        Name: currentItem.Name, // Keep existing Name
-        Author: currentItem.Author, // Keep existing Author
-        Description: newDescription, // Update Description
-        Genre: currentItem.Genre, // Keep existing Genre ID
-        SubGenre: currentItem.SubGenre, // Keep existing SubGenre ID
-        Published: currentItem.Published, // Keep existing Published date
-        LastUpdated: new Date().toISOString(), // Update timestamp
-        LastUpdatedBy: "adminAccount", // Update user
-      };
 
-      try {
-        const response = await axios.put(`${baseUrl}/${currentItem.ID}`, updatedItemData, { withCredentials: true });
-        setCurrentItem(response.data);
-        alert(`Item "${response.data.Name}" updated successfully!`);
-      } catch (error) {
-        console.error("Error updating item:", error.response ? error.response.data : error);
-        alert(`Failed to update item. ${error.response?.data?.message || 'Check console.'}`);
+    if (newDescription === null) return; // User cancelled
+
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    // Only send fields being updated
+    const updatedFields = {
+      Description: newDescription,
+      LastUpdated: new Date().toISOString(),
+      LastUpdatedBy: "adminAccount"
+    };
+
+    console.log("Updating item ID:", currentItem.ID);
+    console.log("Update data:", updatedFields);
+
+    axios.patch(
+      `${baseUrl}/${currentItem.ID}`,
+      updatedFields,
+      {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
       }
-    }
+    )
+    .then((response) => {
+      console.log("Item updated successfully:", response.data);
+      setSuccessMessage(`Item "${currentItem.Name}" updated successfully!`);
+
+      // Update the current item display
+      setCurrentItem({
+        ...currentItem, // may cause an error check out later
+        Description: newDescription,
+        LastUpdated: new Date().toISOString(),
+        LastUpdatedBy: "adminAccount" // hardcoded right now change later
+      });
+
+      setIsLoading(false);
+    })
+    .catch((error) => {
+      console.error("Error updating item:", error);
+      console.error("Error response:", error.response);
+
+      // same delete later just soem error logging
+      let errorMsg = "Failed to update item. ";
+
+      if (error.response) {
+        const status = error.response.status;
+
+        if (status === 404) {
+          errorMsg += "Item not found. Check the Item ID.";
+        } else if (status === 401 || status === 403) {
+          errorMsg += "Authentication required. Please log in as admin.";
+        } else if (status === 400) {
+          errorMsg += error.response.data?.message || "Invalid data format.";
+        } else {
+          errorMsg += `Server error (${status}). ${error.response.data?.message || ''}`;
+        }
+      } else if (error.request) {
+        errorMsg += "No response from server. Is Docker running?";
+      } else {
+        errorMsg += error.message;
+      }
+
+      setErrorMessage(errorMsg);
+      setIsLoading(false);
+    });
   };
+
 
   // Handle Delete Item
-  const handleDeleteItem = async () => {
-    if (!currentItem || !window.confirm(`Are you sure you want to delete "${currentItem.Name}"?`)) {
-      return;
-    }
+const handleDeleteItem = () => {
+    if (!currentItem) return;
 
-    try {
-      await axios.delete(`${baseUrl}/${currentItem.ID}`, { withCredentials: true });
-      alert(`Item "${currentItem.Name}" deleted successfully!`);
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${currentItem.Name}"? This action cannot be undone.`
+    );
+
+    if (!confirmDelete) return;
+
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    console.log("Deleting item with ID:", currentItem.ID);
+    console.log("DELETE URL:", `${baseUrl}/${currentItem.ID}`);
+
+    axios.delete(
+      `${baseUrl}/${currentItem.ID}`,
+      {
+        headers: {
+          'Accept': 'application/json'
+        },
+        withCredentials: true
+      }
+    )
+    .then((response) => {
+      console.log("Item deleted successfully:", response);
+      setSuccessMessage(`Item "${currentItem.Name}" deleted successfully.`);
+
+      setShowItemInfo(false);
       setCurrentItem(null);
       setSearchItemName("");
-    } catch (error) {
-      console.error("Error deleting item:", error.response ? error.response.data : error);
-      alert(`Failed to delete item. ${error.response?.data?.message || 'Check console.'}`);
-    }
+      setIsLoading(false);
+    })
+    .catch((error) => {
+      console.error("Error deleting item:", error);
+      console.error("Error response:", error.response);
+
+      let errorMsg = "Failed to delete item. ";
+
+      if (error.response) {
+        const status = error.response.status;
+
+        if (status === 400) {
+          errorMsg += "Cannot delete this item. It may have related data (stock, orders) in the system.";
+        } else if (status === 401 || status === 403) {
+          errorMsg += "Authentication required. Please log in as admin.";
+        } else if (status === 404) {
+          errorMsg += "Item not found.";
+        } else {
+          errorMsg += `Server error (${status}). ${error.response.data?.message || ''}`;
+        }
+      } else if (error.request) {
+        errorMsg += "No response from server. Is Docker running?";
+      } else {
+        errorMsg += error.message;
+      }
+
+      setErrorMessage(errorMsg);
+      setIsLoading(false);
+    });
   };
+
 
   // --- Render ---
   return (

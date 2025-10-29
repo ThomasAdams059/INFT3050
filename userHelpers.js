@@ -1,86 +1,210 @@
-import React, { useState } from "react";
-import { tryLoginUser, tryLoginPatron } from './helpers/userHelpers';
+import axios from 'axios';
+// API endpoints
+const API_PREFIX_SHORT = "http://localhost:3001";
+const API_PREFIX_LONG = API_PREFIX_SHORT + "/api/inft3050";
 
+// SHA256 password hashing
+async function sha256(message) {
+  // encode as UTF-8
+  const msgBuffer = new TextEncoder().encode(message);
+  // hash the message
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  // convert ArrayBuffer to Array
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  // convert bytes to hex string
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
 
-
-const Login = ({ onLogin }) => {
-  //const [action, setAction] = useState("Login");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-
-  const handleLogin = (event) => {
-    event.preventDefault(); // Prevent reloading of the page
-    if (username && password) {
-      
-      // --- HARDCODED ADMIN CHECK ---
-      //if (username === 'adminAccount') {
-          // Bypass API check for the admin account and redirect directly to the admin page
-          // Pass 'true' for isAdmin status
-          /*onLogin(true); 
-          return;
-      }*/
-      // --- END HARDCODED ADMIN CHECK ---
-      
-      const resultHandler = (result) => {
-
-        //new error log
-        console.log("=== LOGIN DEBUG ===");
-        console.log("Full result:", result);
-        console.log("result.status:", result.status);
-        console.log("result.isAdmin:", result.isAdmin);
-        console.log("typeof result.isAdmin:", typeof result.isAdmin);
-
-        if (result && result.status === "Success!") {
-          // If not the hardcoded admin, check the isAdmin status returned from the API
-          const isAdmin = result.isAdmin === true; 
-
-          //another error log
-          console.log("isAdmin value being passed:", isAdmin);
-          onLogin(isAdmin);
-        } else {
-          alert("Login failed. Please check your credentials.");
-        }
-      };
-      // For all other users, proceed with the normal API login check
-      tryLoginUser(username, password, resultHandler);
-    } else {
-      alert("Please enter both username and password.");
-    }
-  };
-
-  const renderLoginForm = () => (
-    <div className='account-container'>
-      <div className="account-header">
-        <div className='account-text'>Log In</div>
-        <div className='underline'></div>
-      </div>
-      <div className='inputs'>
-        <div className='input'>
-          <label htmlFor="username">Username*</label>
-          <input id="username" type='text' placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-        </div>
-        <div className='input'>
-          <label htmlFor="password">Password*</label>
-          <input id="password" type='password' placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </div>
-      </div>
-      <div className="forgot-password">
-        <span>
-          <a href="/recoverAccount">Lost Password? Click Here!</a>
-        </span>
-      </div>
-      <div className='create-container'>
-        <div className="submit" onClick={handleLogin}>Log In</div>
-        <div className="submit gray" onClick={() => { window.location.href = "/createAccount"; }}>Create Account</div>
-      </div>
-    </div>
-  );
-
-  return (
-    <>
-      {renderLoginForm()}
-    </>
-  );
+// Generate a random salt: a 32-character hex string
+const generateSalt = () => {
+  const salt = window.crypto.randomUUID().replaceAll("-", "");
+  //console.log("Salt: ", salt);
+  return salt;
 };
 
-export default Login;
+/* Axios database calls */
+// Login user
+const tryLoginUser = (username, password, setResult) => {
+  const headers = {
+    'Accept': 'application/json',
+  };
+  
+  // POST credentials to login
+  axios.post(API_PREFIX_SHORT + "/login", { username: username, password: password }, {
+    headers: headers, 
+    withCredentials: true
+  })
+  .then((response) => { 
+    console.log("=== USERHELPER DEBUG ===");
+    console.log("1. Full axios response:", response);
+    console.log("2. response.data:", response.data);
+    console.log("3. response.data.isAdmin:", response.data.isAdmin);
+    console.log("4. Type of response.data.isAdmin:", typeof response.data.isAdmin);
+
+    // Check for isAdmin in different possible formats
+    const isAdmin = response.data.isAdmin === true || 
+                    response.data.isAdmin === 'true' ||
+                    response.data.isAdmin === 1;
+
+    console.log("5. Extracted isAdmin value:", isAdmin);
+
+    const resultObject = { 
+      status: "Success!", 
+      isAdmin: isAdmin, 
+      user: response.data
+    };
+
+    console.log("6. Result object being sent:", resultObject);
+
+    setResult(resultObject);
+  }).catch((error) => {
+    console.log("=== LOGIN ERROR ===");
+    console.log(error);
+    setResult({ 
+      status: "Error :(", 
+      isAdmin: false, 
+      error: error.response?.data?.message || "Login failed"
+    });
+  });
+};
+
+
+// Login Patron or Customer
+const tryLoginPatron = (email, password, setResult) => {
+  const headers = {
+    'Accept': 'application/json',
+  };
+
+  console.log("=== PATRON LOGIN ATTEMPT ===");
+  console.log("Email:", email);
+
+ axios.get(API_PREFIX_LONG + "/Patrons", {
+    headers: headers,
+    withCredentials: true
+  })
+  .then((response) => {
+    console.log("Patrons response:", response.data);
+
+    if (!response.data || !response.data.list) {
+      setResult({
+        status: "Error :(",
+        isAdmin: false,
+        error: "Unable to retrieve patron data"
+      });
+      return;
+    }
+
+    const patrons = response.data.list;
+    
+    // Find patron with matching email (case-insensitive)
+    const patron = patrons.find(p => 
+      p.Email.toLowerCase() === email.toLowerCase()
+    );
+
+    if (!patron) {
+      console.log("No patron found with email:", email);
+      setResult({
+        status: "Error :(",
+        isAdmin: false,
+        error: "Invalid email or password"
+      });
+      return;
+    }
+
+    console.log("Found patron:", patron);
+
+    // hash the provided password with the patron's salt
+    sha256(patron.Salt + password).then((hashedPassword) => {
+      console.log("Computed hash:", hashedPassword);
+      console.log("Stored hash:", patron.HashPW);
+
+      // compare hashed password with stored hash to ensure proper login
+      if (hashedPassword === patron.HashPW) {
+        console.log("Password match! Login successful");
+        
+        const resultObject = {
+          status: "Success!",
+          isAdmin: false, // Patrons are NEVER admins
+          isPatron: true,
+          user: {
+            UserID: patron.UserID,
+            Email: patron.Email,
+            Name: patron.Name
+          }
+        };
+
+        setResult(resultObject);
+      } else {
+        console.log("Password mismatch!");
+        setResult({
+          status: "Error :(",
+          isAdmin: false,
+          error: "Invalid email or password"
+        });
+      }
+    }).catch((error) => {
+      console.error("Error hashing password:", error);
+      setResult({
+        status: "Error :(",
+        isAdmin: false,
+        error: "Login processing error"
+      });
+    });
+
+  }).catch((error) => {
+    console.log("=== PATRON LOGIN ERROR ===");
+    console.log(error);
+    setResult({
+      status: "Error :(",
+      isAdmin: false,
+      error: error.response?.data?.message || "Login failed"
+    });
+  });
+};
+
+
+
+// Add new user
+const tryAddNewUser = async (fullName, email, password, address, postcode, state, setResult) => {
+  const headers = {
+    'Accept': 'application/json',
+  };
+  
+  
+  const salt = generateSalt();
+  const hashedPW = await sha256(salt + password);
+  
+  const newCredentials = {
+    UserName: fullName, // Use FullName for UserName for simplicity (based on login changes)
+    Email: email,
+    Address: address,
+    PostCode: postcode,
+    State: state,
+    IsAdmin: "false",
+    Salt: salt,
+    HashPW: hashedPW,
+    Name: fullName // Using FullName as Name
+  };
+
+  axios.post(API_PREFIX_LONG + "/User", newCredentials, {
+    headers: headers,
+    withCredentials: true
+  }).then(response => {
+    console.log("Added user successfully", response);
+    setResult("Success");
+  }).catch(error => {
+    console.error('Error posting data:', error);
+    setResult("Fail");
+
+    //extra steps 
+    if (error.response?.status === 401) {
+      console.error(" NOT AUTHENTICATED - You must login first!");
+      setResult("Fail - Not authenticated");
+    } else {
+      setResult("Fail");
+    }
+  });
+};
+
+export { tryAddNewUser, tryLoginUser, tryLoginPatron };

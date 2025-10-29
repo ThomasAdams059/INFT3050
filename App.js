@@ -46,7 +46,7 @@ function App() {
   sessionStorage.setItem('isAdmin', isAdmin.toString());
   
   // Redirect
-  window.location.href = isAdmin ? '/adminAccount' : '/dminAccount';
+  window.location.href = isAdmin ? '/adminAccount' : '/accountSettings';
 };
   
 

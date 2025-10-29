@@ -28,20 +28,17 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Check session on initial app load
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
         const response = await axios.get("http://localhost:3001/me", { withCredentials: true });
         setIsLoggedIn(true);
-        // --- 2. SET ADMIN STATUS ON LOAD ---
         if (response.data && response.data.isAdmin === true) {
           setIsAdmin(true);
         }
-        // --- END ---
       } catch (error) {
         setIsLoggedIn(false);
-        setIsAdmin(false); // Ensure reset on error
+        setIsAdmin(false); 
       }
     };
     
@@ -58,7 +55,6 @@ function App() {
     setIsLoggedIn(true);
     setIsAdmin(isAdmin);
     
-    // --- 5. FIXED REDIRECT BUG ---
     window.location.href = isAdmin ? '/adminAccount' : '/accountSettings';
   };
 

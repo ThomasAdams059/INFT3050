@@ -1,88 +1,122 @@
-import React from 'react';
-
-const ProductCard = ({ imageSrc, bookName, price, onClick }) => {
-  return (
-    <div
-      className="product-card-container"
-      onClick={onClick}
-    >
-      <div className="product-image-container">
-        <img src={imageSrc} alt={bookName} className="product-image" />
-      </div>
-      <div className="product-details">
-        <h3 className="product-title">
-          {bookName}
-        </h3>
-        <p className="product-price">
-          {price}
-        </p>
-      </div>
-    </div>
-  );
-};
-
-// Mock data structured by author.
-const mockAuthors = [
-  {
-    id: 1,
-    name: "Thomas",
-    books: [
-      { id: 1, name: 'Tom\'s Book 1', price: '$20', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 2, name: 'Tom\'s Book 2', price: '$25', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 3, name: 'Tom\'s Book 3', price: '$15', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 4, name: 'Tom\'s Book 4', price: '$30', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-    ]
-  },
-  {
-    id: 2,
-    name: "Dominic",
-    books: [
-      { id: 5, name: 'Dominic\'s Book 1', price: '$18', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 6, name: 'Dominic\'s Book 2', price: '$22', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 7, name: 'Dominic\'s Book 3', price: '$28', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 8, name: 'Dominic\'s Book 4', price: '$19', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-    ]
-  },
-  {
-    id: 3,
-    name: "Tahsina",
-    books: [
-      { id: 9, name: 'Tahsina Book 1', price: '$24', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 10, name: 'Tahsina Book 2', price: '$21', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-      { id: 11, name: 'Tahsina Book 3', price: '$26', image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book' },
-    ]
-  }
-];
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import ProductCard from './productCard';
 
 export default function Author() {
-  const handleCardClick = (bookId) => {
-    // Navigates to the product page with the book's ID in the URL.
-    window.location.href = `/products?id=${bookId}`;
+  const [authors, setAuthors] = useState([]); // Stores data grouped by author
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAuthorAndStocktakeData = async () => {
+      try {
+        const baseUrl = "http://localhost:3001/api/inft3050";
+        const productsUrl = `${baseUrl}/Product`; // Fetch all products to find Authors
+        const stocktakeUrl = `${baseUrl}/Stocktake`;
+
+        // 1. Fetch Products and Stocktake data in parallel
+        const [productsResponse, stocktakeResponse] = await Promise.all([
+          axios.get(productsUrl),
+          axios.get(stocktakeUrl)
+        ]);
+
+        const productsList = productsResponse.data.list;
+        const stocktakeList = stocktakeResponse.data.list;
+
+        if (!productsList) {
+            setError("No products found.");
+            setLoading(false);
+            return;
+        }
+
+        // 2. Create a price lookup map for quick access
+        const priceMap = {};
+        stocktakeList.forEach(item => {
+          // Ensure we only consider items from SourceId 1 (Hard Copy Books), as in genre.js
+          if(item.SourceId === 1) 
+            priceMap[item.ProductId] = item.Price;
+        });
+
+        // 3. Group products by Author
+        const authorsMap = {};
+
+        productsList.forEach(product => {
+          // Use 'Unknown Author' as fallback if the field is missing
+          const authorName = product.Author || 'Unknown Author';
+          
+          if (!authorsMap[authorName]) {
+            authorsMap[authorName] = {
+              id: authorName.replace(/\s/g, ''), // Create a simple unique ID by removing spaces
+              name: authorName,
+              products: []
+            };
+          }
+
+          // Apply price to the product
+          const price = priceMap[product.ID] ? `$${priceMap[product.ID].toFixed(2)}` : 'Price N/A';
+          
+          authorsMap[authorName].products.push({
+            id: product.ID,
+            name: product.Name,
+            // Placeholder value consistent with other components
+            image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Product',
+            price: price
+          });
+        });
+
+        // Convert the map of authors back into a renderable array
+        setAuthors(Object.values(authorsMap));
+        setLoading(false);
+        setError(null);
+        
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setError("Failed to load author data. Check API connection.");
+        setLoading(false);
+      }
+    };
+
+    fetchAuthorAndStocktakeData();
+  }, []);
+
+  const handleCardClick = (productId) => {
+    // Navigates to the product page with the product's ID in the URL, as is standard practice
+    window.location.href = `/products?id=${productId}`;
   };
 
   return (
     <div className="main-container">
       <header className="section-header">
-        <h1 className="section-heading">Browse Authors</h1>
+        <h1 className="section-heading">Browse by Author</h1>
       </header>
-      {mockAuthors.map(author => (
-        <div key={author.id} className="content-section">
-          <header className="section-header">
-            <h2 className="section-heading">{author.name}</h2>
-          </header>
-          <main className="horizontal-scroll-container">
-            {author.books.map(book => (
-              <ProductCard
-                key={book.id}
-                imageSrc={book.image}
-                bookName={book.name}
-                price={book.price}
-                onClick={() => handleCardClick(book.id)}
-              />
-            ))}
-          </main>
-        </div>
-      ))}
+      
+      {loading ? (
+        <p>Loading authors...</p>
+      ) : error ? (
+        <p className="error-message">{error}</p>
+      ) : authors.length > 0 ? (
+        authors.map(author => (
+          <div key={author.id} className="content-section"> {/* Uses unique author name as key */}
+            <header className="section-header">
+              <h2 className="section-heading">{author.name}</h2>
+            </header>
+            <main className="horizontal-scroll-container">
+              {/* Display the first 7 books by this author, consistent with other pages */}
+              {author.products.slice(0, 7).map(product => (
+                <ProductCard
+                  key={product.id}
+                  imageSrc={product.image}
+                  productName={product.name}
+                  price={product.price}
+                  onClick={() => handleCardClick(product.id)}
+                />
+              ))}
+            </main>
+          </div>
+        ))
+      ) : (
+        <p>No authors found in the database.</p>
+      )}
     </div>
   );
 }

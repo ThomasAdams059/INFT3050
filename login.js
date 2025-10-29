@@ -41,13 +41,26 @@ const Login = ({ onLogin }) => {
           alert("Login failed. Please check your credentials.");
         }
       };
-      // For all other users, proceed with the normal API login check
-      tryLoginUser(username, password, resultHandler);
+
+      const isEmail = username.includes('@');
+      
+      console.log("🔍 Username entered:", username);
+      console.log("🔍 Contains @?:", isEmail);
+      
+      if (isEmail) {
+        // use Patron login
+        console.log("🔵 Attempting PATRON login");
+        tryLoginPatron(username, password, resultHandler);
+      } else {
+        
+        console.log("🟢 Attempting USER login");
+        tryLoginUser(username, password, resultHandler);
+      }
+      
     } else {
-      alert("Please enter both username and password.");
+      alert("Please enter both username/email and password.");
     }
   };
-
   const renderLoginForm = () => (
     <div className='account-container'>
       <div className="account-header">

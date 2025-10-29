@@ -6,6 +6,8 @@ const PatronManagement = () => {
   const baseUrl = "http://localhost:3001/api/inft3050/Patrons";
 
   const [patrons, setPatrons] = useState([]);
+
+  const [showPatronList, setShowPatronList] = useState(false);
   
   const [isLoading, setIsLoading] = useState(false);
 

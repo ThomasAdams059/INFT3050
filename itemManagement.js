@@ -14,8 +14,7 @@ const ItemManagement = () => {
   const [searchItemName, setSearchItemName] = useState("");
   const [currentItem, setCurrentItem] = useState(null);
   const [showItemInfo, setShowItemInfo] = useState(false);
-  const [loadingSearch, setLoadingSearch] = useState(false);
-  const [searchError, setSearchError] = useState(false);
+ 
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -110,31 +109,95 @@ const handleAddItem = (event) => {
   // Handle Search Item by Name
   const handleSearchItem = async (event) => {
     event.preventDefault();
-    setLoadingSearch(true);
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    setShowItemInfo(false);
     setCurrentItem(null);
-    setSearchError(null);
 
-    try {
-      // Fetch all and filter client-side
-      const response = await axios.get(baseUrl, { withCredentials: true });
-      const foundItem = response.data.list.find(item =>
+    console.log("Searching for item:", searchItemName);
+    console.log("Making GET request to:", baseUrl);
+
+  axios.get(
+      baseUrl,
+      {
+        headers: {
+          'Accept': 'application/json'
+        },
+        withCredentials: true
+      }
+    )
+    .then((response) => {
+      console.log("Response received:", response);
+      console.log("Response data:", response.data);
+
+      // Check if response has expected structure
+      if (!response.data || !response.data.list) {
+        console.error("Unexpected response structure:", response.data);
+        setErrorMessage("Unexpected data format from server");
+        setIsLoading(false);
+        return;
+      }
+
+      const items = response.data.list;
+
+      console.log("Total items found:", items.length);
+      console.log("Items array:", items);
+
+      // Search for item (case insensitive)
+      const foundItem = items.find(item =>
         item.Name.toLowerCase() === searchItemName.toLowerCase()
       );
 
       if (foundItem) {
+        console.log("Item found:", foundItem);
         setCurrentItem(foundItem);
+        setShowItemInfo(true);
+        setSuccessMessage(`Found item: ${foundItem.Name}`);
       } else {
-        setSearchError("Item not found.");
+        setErrorMessage(`Item "${searchItemName}" not found`);
+        setCurrentItem(null);
+        setShowItemInfo(false);
       }
-    } catch (error) {
+
+      setIsLoading(false);
+    })
+    .catch((error) => {
       console.error("Error searching item:", error);
-      setSearchError("Failed to search for item.");
-    } finally {
-      setLoadingSearch(false);
-    }
+      console.error("Error details:", {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+
+      let errorMsg = "Failed to search for item. ";
+
+      if (error.response) {
+        const status = error.response.status;
+
+        if (status === 401 || status === 403) {
+          errorMsg += "Authentication required. Please log in as admin.";
+        } else if (status === 404) {
+          errorMsg += "Product endpoint not found. Check the API URL.";
+        } else if (status === 500) {
+          errorMsg += "Server error. Please try again later.";
+        } else {
+          errorMsg += `Server error (${status}). ${error.response.data?.message || ''}`;
+        }
+      } else if (error.request) {
+        errorMsg += "No response from server. Is Docker running?";
+      } else {
+        errorMsg += error.message;
+      }
+
+      setErrorMessage(errorMsg);
+      setIsLoading(false);
+    });
   };
 
-  // Handle Edit Item (Placeholder - a real edit needs a form)
+
+  // Handle Edit Item 
  const handleEditItem = () => {
     if (!currentItem) return;
 
@@ -146,7 +209,7 @@ const handleAddItem = (event) => {
     setErrorMessage("");
     setSuccessMessage("");
 
-    // Only send fields being updated
+    // only fields being updated are sent
     const updatedFields = {
       Description: newDescription,
       LastUpdated: new Date().toISOString(),
@@ -282,6 +345,10 @@ const handleDeleteItem = () => {
     <div className="management-container">
       <h1>Item Management</h1>
 
+      {errorMessage && <div className="error-message">{errorMessage}</div>}
+      {successMessage && <div className="success-message">{successMessage}</div>}
+      {isLoading && <div className="loading-message">Loading...</div>}
+
       <div className="management-grid">
         {/* Add Item Section */}
         <div className="management-section">
@@ -289,32 +356,64 @@ const handleDeleteItem = () => {
           <form onSubmit={handleAddItem}>
             <div className="form-group">
               <label>Name<span className="required">*</span></label>
-              <input type="text" placeholder="Name of Item" value={itemName} onChange={(e) => setItemName(e.target.value)} required />
+              <input
+                type="text"
+                placeholder="Name of Item"
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                required
+              />
             </div>
             <div className="form-group">
               <label>Author</label>
-              <input type="text" placeholder="Author Name" value={author} onChange={(e) => setAuthor(e.target.value)} />
+              <input
+                type="text"
+                placeholder="Author Name"
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
+              />
             </div>
             <div className="form-group">
               <label>Description</label>
-              <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <textarea
+                placeholder="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
             </div>
-            <div className="form-row"> {/* Group Genre and SubGenre */}
+            <div className="form-row">
               <div className="form-group">
                 <label>Genre ID<span className="required">*</span></label>
-                <input type="number" placeholder="Genre ID" value={genreId} onChange={(e) => setGenreId(e.target.value)} required />
+                <input
+                  type="number"
+                  placeholder="Genre ID"
+                  value={genreId}
+                  onChange={(e) => setGenreId(e.target.value)}
+                  required
+                />
               </div>
               <div className="form-group">
                 <label>SubGenre ID<span className="required">*</span></label>
-                <input type="number" placeholder="SubGenre ID" value={subgenreId} onChange={(e) => setSubgenreId(e.target.value)} required />
+                <input
+                  type="number"
+                  placeholder="SubGenre ID"
+                  value={subgenreId}
+                  onChange={(e) => setSubgenreId(e.target.value)}
+                  required
+                />
               </div>
             </div>
-             <div className="form-group">
-               <label>Published Date</label>
-               <input type="date" value={published} onChange={(e) => setPublished(e.target.value)} />
-             </div>
-            {/* Removed Type dropdown as it's implied by Genre/SubGenre in your API structure */}
-            <button type="submit" className="btn-add">Add Item</button>
+            <div className="form-group">
+              <label>Published Date</label>
+              <input
+                type="date"
+                value={published}
+                onChange={(e) => setPublished(e.target.value)}
+              />
+            </div>
+            <button type="submit" className="btn-add" disabled={isLoading}>
+              {isLoading ? "Adding..." : "Add Item"}
+            </button>
           </form>
         </div>
 
@@ -322,48 +421,41 @@ const handleDeleteItem = () => {
         <div className="management-section">
           <h2>Edit/Delete Item</h2>
           <form onSubmit={handleSearchItem} className="search-box">
-            <div className="form-group">
-                <label>Search by Name<span className="required">*</span></label>
-                <input
-                  type="text"
-                  placeholder="Enter exact item name"
-                  value={searchItemName}
-                  onChange={(e) => setSearchItemName(e.target.value)}
-                  required
-                />
-            </div>
-            <button type="submit" className="btn-search" disabled={loadingSearch}>
-              {loadingSearch ? 'Searching...' : 'Search Item'}
+            <label>
+              Search by Name<span className="required">*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Enter exact item name"
+              value={searchItemName}
+              onChange={(e) => setSearchItemName(e.target.value)}
+              required
+            />
+            <button type="submit" className="btn-search" disabled={isLoading}>
+              {isLoading ? 'Searching...' : 'Search Item'}
             </button>
           </form>
 
-          {searchError && <p className="error-message">{searchError}</p>}
-
-          {currentItem && (
+          {showItemInfo && currentItem && (
             <>
               <div className="item-info">
-                    <h3>Item Details</h3>
-                    <p><strong>ID:</strong> {currentItem.ID}</p>
-                    <p><strong>Name:</strong> {currentItem.Name}</p>
-                    <p><strong>Author:</strong> {currentItem.Author || 'N/A'}</p>
-                    <p><strong>Description:</strong> {currentItem.Description || 'N/A'}</p>
-                    <p><strong>Published:</strong> {currentItem.Published ? new Date(currentItem.Published).toLocaleDateString() : 'N/A'}</p>
-                    
-                    {/* --- CORRECTED LINE --- */}
-                    {/* Check if Genre is a number before rendering, handle object case */}
-                    <p><strong>Genre ID:</strong> {typeof currentItem.Genre === 'number' ? currentItem.Genre : 'N/A'}</p> 
-                    
-                    <p><strong>SubGenre ID:</strong> {currentItem.SubGenre}</p>
-                    <p><strong>Last Updated:</strong> {currentItem.LastUpdated ? new Date(currentItem.LastUpdated).toLocaleString() : 'N/A'}</p>
-                    <p><strong>Last Updated By:</strong> {currentItem.LastUpdatedBy || 'N/A'}</p>
-                    </div>
+                <h3>Item Details</h3>
+                <p><strong>ID:</strong> {currentItem.ID}</p>
+                <p><strong>Name:</strong> {currentItem.Name}</p>
+                <p><strong>Author:</strong> {currentItem.Author || 'N/A'}</p>
+                <p><strong>Description:</strong> {currentItem.Description || 'N/A'}</p>
+                <p><strong>Published:</strong> {currentItem.Published ? new Date(currentItem.Published).toLocaleDateString() : 'N/A'}</p>
+                <p><strong>Genre ID:</strong> {typeof currentItem.Genre === 'number' ? currentItem.Genre : 'N/A'}</p>
+                <p><strong>SubGenre ID:</strong> {currentItem.SubGenre}</p>
+                <p><strong>Last Updated:</strong> {currentItem.LastUpdated ? new Date(currentItem.LastUpdated).toLocaleString() : 'N/A'}</p>
+                <p><strong>Last Updated By:</strong> {currentItem.LastUpdatedBy || 'N/A'}</p>
+              </div>
 
               <div className="button-row">
-                {/* Edit Button - Basic implementation */}
-                <button className="btn-edit" onClick={handleEditItem}>
-                  Edit Description (Prompt)
+                <button className="btn-edit" onClick={handleEditItem} disabled={isLoading}>
+                  Edit Description
                 </button>
-                <button className="btn-delete" onClick={handleDeleteItem}>
+                <button className="btn-delete" onClick={handleDeleteItem} disabled={isLoading}>
                   Delete Item
                 </button>
               </div>

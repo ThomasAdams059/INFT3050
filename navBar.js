@@ -8,7 +8,7 @@ export default function Navbar({ isLoggedIn, isAdmin, onLogout }) {
   };
 
   const accountHref = isLoggedIn
-    ? (isAdmin ? "/adminAccount" : "/myAccount")
+    ? (isAdmin ? "/myAccount" : "/adminAccount")
     : "/login";
 
   return (

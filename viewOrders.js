@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+// API URLs
 const ORDERS_URL = "http://localhost:3001/api/inft3050/Orders";
 const PATRONS_URL = "http://localhost:3001/api/inft3050/Patrons";
 const STOCKTAKE_URL = "http://localhost:3001/api/inft3050/Stocktake";
 const PRODUCT_URL = "http://localhost:3001/api/inft3050/Product";
 
+// --- Sub-Component (OrderDetails) remains the same ---
 const OrderDetails = ({ stockItems }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -87,12 +89,16 @@ const OrderDetails = ({ stockItems }) => {
 };
 
 
+// --- Main ViewOrders Component ---
 const ViewOrders = () => {
   const [orders, setOrders] = useState([]);
   const [patronNameMap, setPatronNameMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+
+  // --- NEW: State for the filter input ---
+  const [filterId, setFilterId] = useState("");
 
   useEffect(() => {
     const fetchOrdersAndNames = async () => {
@@ -151,33 +157,55 @@ const ViewOrders = () => {
     }
   };
 
-  // --- NEW: Function to go back ---
   const handleBackToDashboard = () => {
     window.location.href = '/employeePage';
   };
+
+  // --- NEW: Filter logic ---
+  const filteredOrders = orders.filter(order =>
+    // Check if the OrderID (converted to string) includes the filter text
+    order.OrderID.toString().includes(filterId)
+  );
 
   return (
     <div className="main-container">
       <h1 className="main-heading custom-header-color">View All Orders</h1>
       
-      {/* --- NEW: Back Button Added --- */}
       <button 
         onClick={handleBackToDashboard} 
-        className="admin-manage-button" // Re-using class
-        style={{ marginBottom: '20px', width: 'auto' }} // Added style
+        className="admin-manage-button"
+        style={{ marginBottom: '20px', width: 'auto' }}
       >
         &larr; Back to Employee Dashboard
       </button>
+
+      {/* --- NEW: Filter Input --- */}
+      <div className="filter-container" style={{ marginBottom: '20px' }}>
+        <label htmlFor="orderFilter" style={{ marginRight: '10px', fontWeight: 'bold' }}>
+          Filter by Order ID:
+        </label>
+        <input
+          id="orderFilter"
+          type="text"
+          placeholder="Enter Order ID..."
+          value={filterId}
+          onChange={(e) => setFilterId(e.target.value)}
+          style={{ padding: '8px', fontSize: '1em', width: '250px' }}
+        />
+      </div>
+      {/* --- END NEW Filter Input --- */}
 
       {loading && <p>Loading orders...</p>}
       {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
 
       {!loading && !error && (
         <section className="management-section">
-          <h2>All Orders ({orders.length})</h2>
+          {/* --- UPDATED: Use filtered list length --- */}
+          <h2>All Orders ({filteredOrders.length})</h2>
           <div className="scrollable-list-container" style={{ maxHeight: '70vh', overflowY: 'auto', border: '1px solid #ccc', padding: '10px' }}>
-            {orders.length > 0 ? (
-              orders.map(order => (
+            {/* --- UPDATED: Map over filtered list --- */}
+            {filteredOrders.length > 0 ? (
+              filteredOrders.map(order => (
                 <div key={order.OrderID} className="list-item-row" style={{ borderBottom: '1px solid #eee', padding: '10px', marginBottom: '10px', background: '#fff' }}>
                   <p><strong>Order ID:</strong> {order.OrderID}</p>
                   
@@ -208,7 +236,8 @@ const ViewOrders = () => {
                 </div>
               ))
             ) : (
-              <p>No orders found in the database.</p>
+              // --- UPDATED: Show different message if filtering ---
+              <p>{filterId ? 'No orders found matching your filter.' : 'No orders found in the database.'}</p>
             )}
           </div>
         </section>

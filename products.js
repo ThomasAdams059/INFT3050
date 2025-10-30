@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ProductCard from './productCard';
 
-// Accept props from App.js
+// Accept props from App.js (isLoggedIn, isPatron, patronInfo)
 const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -11,8 +11,12 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  // --- NEW STATE for managing product versions ---
+  // Stores all available versions (e.g., Hard Copy, Digital)
   const [availableSources, setAvailableSources] = useState([]);
+  // Stores the ItemId of the *selected* version
   const [selectedStockItemId, setSelectedStockItemId] = useState(null);
+  // Stores the price of the *selected* version for display
   const [selectedPrice, setSelectedPrice] = useState(null);
   
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
@@ -26,6 +30,7 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
         setLoading(false);
         return;
       }
+      // Reset all state
       setLoading(true);
       setError(null);
       setProductData(null);
@@ -41,7 +46,7 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
       try {
         const [allProductsResponse, stocktakeResponse] = await Promise.all([
           axios.get(allProductsUrl),
-          axios.get(stocktakeUrl)
+          axios.get(stocktakeUrl) // Fetch the full stocktake list
         ]);
         
         const allProductsList = allProductsResponse.data.list;
@@ -54,27 +59,34 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
           return;
         }
 
+        // --- NEW LOGIC: Find all available sources for this product ---
         const allSourcesForProduct = stocktakeList
+          // Find all stock items matching this ProductId that have a Source
           .filter(item => item.ProductId.toString() === productId && item.Source)
+          // Map them to a cleaner object
           .map(item => ({
             itemId: item.ItemId,
-            sourceName: item.Source.SourceName,
+            sourceName: item.Source.SourceName, // Get name from nested object
             price: item.Price,
             quantity: item.Quantity
           }));
         
         setAvailableSources(allSourcesForProduct);
 
+        // Set a default selection
         if (allSourcesForProduct.length > 0) {
+          // Default to the first available source
           setSelectedStockItemId(allSourcesForProduct[0].itemId);
           setSelectedPrice(allSourcesForProduct[0].price);
-          mainProduct.Price = allSourcesForProduct[0].price;
+          mainProduct.Price = allSourcesForProduct[0].price; // for initial price display
         } else {
-          mainProduct.Price = null;
+          mainProduct.Price = null; // No sources found
         }
+        // --- END NEW LOGIC ---
 
         setProductData(mainProduct);
 
+        // Other titles logic (remains the same)
         if (mainProduct.Author) {
           const authorProducts = allProductsList.filter(
             p => p.Author === mainProduct.Author && p.ID !== mainProduct.ID
@@ -99,6 +111,7 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
     fetchProductDetails();
   }, [window.location.search]);
 
+  // --- NEW: Handler for changing the selected source ---
   const handleSourceChange = (event) => {
     const newSelectedItemId = parseInt(event.target.value, 10);
     const selectedSource = availableSources.find(s => s.itemId === newSelectedItemId);
@@ -106,6 +119,7 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
     if (selectedSource) {
       setSelectedStockItemId(selectedSource.itemId);
       setSelectedPrice(selectedSource.price);
+      // Update the main product price for display
       setProductData(prevData => ({
         ...prevData,
         Price: selectedSource.price
@@ -113,6 +127,7 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
     }
   };
 
+  // --- "Add to Order" Handler (Updated) ---
   const handleAddToOrderClick = async () => {
     if (!isLoggedIn || !isPatron) {
       alert("Please log in as a customer to place an order.");
@@ -123,6 +138,7 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
       alert("Cannot create order. User or product information is missing. Please refresh.");
       return;
     }
+    // --- UPDATED: Check if a source is selected ---
     if (!selectedStockItemId) {
       alert("Please select a product version (e.g., Hard Copy, Digital) before ordering.");
       return;
@@ -144,6 +160,8 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
         Suburb: customerDetails.Suburb || 'N/A',
         State: customerDetails.State || 'N/A',
         OrderDate: new Date().toISOString()
+        // Note: As per constraints, this POST /Orders request does not link
+        // the selected item (selectedStockItemId).
       };
 
       const response = await axios.post(
@@ -162,6 +180,7 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
     }
   };
   
+  // Other handlers
   const handleStarClick = (index) => setRating(index);
   const handleMouseEnter = (index) => setHoverRating(index);
   const handleMouseLeave = () => setHoverRating(0);
@@ -170,11 +189,8 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
 
   // --- Helper function to get main genre name ---
   const getGenreName = (genreId) => {
-    // The genreId from the API may be an object, check if it's a number
-    // This is based on the check found in itemManagement.js
-    const id = typeof genreId === 'number' ? genreId : null;
-    
-    switch (id) {
+    // The genreId from the API is a number (e.g., 1, 2, 3)
+    switch (genreId) {
       case 1:
         return 'Book';
       case 2:
@@ -220,7 +236,9 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
         <div className="purchase-container">
           <div className="purchase-box">
             
+            {/* --- UPDATED PRICE DISPLAY --- */}
             <span className="price-tag">
+              {/* Show selected price, or default to N/A if nothing is selected/available */}
               {selectedPrice !== null ? `$${selectedPrice.toFixed(2)}` : 'N/A'}
             </span>
             
@@ -229,6 +247,7 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
               <img src="https://placehold.co/70x40/003C87/FFFFFF?text=VISA" alt="VISA" className="rounded-md" />
             </div>
 
+            {/* --- NEW: Source Selection (Patrons Only) --- */}
             {isLoggedIn && isPatron && (
               <div className="source-selection" style={{ margin: '15px 0' }}>
                 <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1em' }}>Select Version:</h3>
@@ -255,7 +274,9 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
                 )}
               </div>
             )}
+            {/* --- END NEW Source Selection --- */}
 
+            {/* Updated Button */}
             {isLoggedIn && isPatron ? (
               <button
                 className="add-to-cart-button"
@@ -314,3 +335,4 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
 };
 
 export default ProductPage;
+

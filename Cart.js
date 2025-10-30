@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import ProductCard from './productCard'; // Import ProductCard
+import ProductCard from './productCard';
 
-// Removed API_BASE_URL and API_SUFFIX constants
-
-// --- CartItem Component (Includes Remove Button) ---
 const CartItem = ({ item, onRemove }) => {
   if (!item) return null;
 
@@ -32,26 +29,20 @@ const CartItem = ({ item, onRemove }) => {
   );
 };
 
-// --- Updated CartPage Component ---
 const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
-  // State for cart items
   const [cartItems, setCartItems] = useState([]);
   const [loadingCart, setLoadingCart] = useState(true);
   const [cartError, setCartError] = useState(null);
   const [cartTotal, setCartTotal] = useState(0);
 
-  // State for recommended items
   const [recommendedItems, setRecommendedItems] = useState([]);
   const [loadingRecs, setLoadingRecs] = useState(true);
   const [recsError, setRecsError] = useState(null);
 
-  // --- Fetch Cart Items ---
   useEffect(() => {
     const fetchCartItems = async () => {
       if (!isLoggedIn || isAdmin || !activeOrderId) {
         setLoadingCart(false);
-        setCartItems([]);
-        setCartTotal(0);
         return;
       }
 
@@ -59,9 +50,9 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
       setCartError(null);
       try {
         console.log("Fetching items for OrderID:", activeOrderId);
-        // --- Use full URL ---
         const itemsResponse = await axios.get(`http://localhost:3001/api/inft3050/ProductsInOrders?filter[OrderId]=${activeOrderId}`, { withCredentials: true });
         const orderItems = itemsResponse.data.list || [];
+        console.log("Raw items in order:", orderItems);
 
         if (orderItems.length === 0) {
            setCartItems([]);
@@ -73,18 +64,23 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
         const detailedItems = await Promise.all(
           orderItems.map(async (orderItem) => {
             try {
-              // --- Use full URLs ---
               const stocktakeResponse = await axios.get(`http://localhost:3001/api/inft3050/Stocktake/${orderItem.produktId}`, { withCredentials: true });
               const stockItem = stocktakeResponse.data;
+
               const productResponse = await axios.get(`http://localhost:3001/api/inft3050/Product/${stockItem.ProductId}`, { withCredentials: true });
               const productDetails = productResponse.data;
+
               return {
-                productsInOrdersId: orderItem.rowId, stockItemId: orderItem.produktId, productId: stockItem.ProductId,
-                name: productDetails.Name, price: stockItem.Price, quantity: orderItem.Quantity,
+                productsInOrdersId: orderItem.rowId,
+                stockItemId: orderItem.produktId,
+                productId: stockItem.ProductId,
+                name: productDetails.Name,
+                price: stockItem.Price,
+                quantity: orderItem.Quantity,
                 image: 'https://placehold.co/100x150/F4F4F5/18181B?text=Book'
               };
             } catch (detailError) {
-              console.error(`Error fetching details for cart item ${orderItem.produktId}:`, detailError);
+              console.error(`Error fetching details for item ${orderItem.produktId}:`, detailError);
               return null;
             }
           })
@@ -92,6 +88,7 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
 
         const validItems = detailedItems.filter(item => item !== null);
         setCartItems(validItems);
+
         const total = validItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         setCartTotal(total);
 
@@ -108,16 +105,14 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
     fetchCartItems();
   }, [activeOrderId, isLoggedIn, isAdmin]);
 
-  // --- Fetch Recommended Items ---
   useEffect(() => {
     const fetchRecommendations = async () => {
       setLoadingRecs(true);
       setRecsError(null);
       try {
-        // --- Use full URLs ---
         const [productResponse, stocktakeResponse] = await Promise.all([
-          axios.get("http://localhost:3001/api/inft3050/Product"),
-          axios.get("http://localhost:3001/api/inft3050/Stocktake")
+          axios.get(`http://localhost:3001/api/inft3050/Product`),
+          axios.get(`http://localhost:3001/api/inft3050/Stocktake`)
         ]);
 
         const allProducts = productResponse.data.list || [];
@@ -134,13 +129,12 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
           id: product.ID,
           name: product.Name,
           price: priceMap[product.ID] ? `$${priceMap[product.ID].toFixed(2)}` : 'Price N/A',
-          author: product.Author,
-          description: product.Description,
           image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book'
         })).filter(p => p.price !== 'Price N/A');
 
         const shuffled = allPricedProducts.sort(() => 0.5 - Math.random());
         const selectedRecs = shuffled.slice(0, 5);
+
         setRecommendedItems(selectedRecs);
 
       } catch (err) {
@@ -154,28 +148,31 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
     fetchRecommendations();
   }, []);
 
-  // --- Handle Remove Item from Cart ---
   const handleRemoveItem = async (productsInOrdersId) => {
       if (!productsInOrdersId) return;
+
       try {
-          // --- Use full URL ---
+          console.log("Removing ProductsInOrders ID:", productsInOrdersId);
           await axios.delete(`http://localhost:3001/api/inft3050/ProductsInOrders/${productsInOrdersId}`, { withCredentials: true });
-          const removedItem = cartItems.find(item => item.productsInOrdersId === productsInOrdersId);
+
           setCartItems(prevItems => prevItems.filter(item => item.productsInOrdersId !== productsInOrdersId));
-          setCartTotal(prevTotal => removedItem ? prevTotal - (removedItem.price * removedItem.quantity) : prevTotal);
+           setCartTotal(prevTotal => {
+              const removedItem = cartItems.find(item => item.productsInOrdersId === productsInOrdersId);
+              return removedItem ? prevTotal - (removedItem.price * removedItem.quantity) : prevTotal;
+          });
+
           alert("Item removed from cart.");
+
       } catch (error) {
           console.error("Error removing item from cart:", error);
           alert(`Failed to remove item. ${error.response?.data?.message || 'Check console.'}`);
       }
   };
 
-  // --- Handle Click on Recommendation Card ---
   const handleCardClick = (productId) => {
     window.location.href = `/products?id=${productId}`;
   };
 
-  // --- Conditional Rendering for Login/Admin Status ---
   if (!isLoggedIn) {
     return (
       <div className="main-container">
@@ -185,6 +182,7 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
       </div>
     );
   }
+
   if (isAdmin) {
       return (
           <div className="main-container">
@@ -194,7 +192,6 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
       );
   }
 
-  // --- Render Cart and Recommendations ---
   return (
     <div className="main-container">
       <div className="cart-layout">
@@ -202,6 +199,7 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
           <h1 className="cart-heading">Cart</h1>
           {loadingCart && <p>Loading cart...</p>}
           {cartError && <p className="error-message">{cartError}</p>}
+
           {!loadingCart && !cartError && (
             <>
               <div className="cart-items-container">
@@ -231,7 +229,7 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
           {loadingRecs && <p>Loading recommendations...</p>}
           {recsError && <p className="error-message">{recsError}</p>}
           {!loadingRecs && !recsError && (
-            <div className="recommended-items-container-updated">
+            <div className="recommended-items-container">
               {recommendedItems.length > 0 ? (
                 recommendedItems.map(product => (
                   <ProductCard
@@ -239,8 +237,6 @@ const CartPage = ({ isLoggedIn, isAdmin, patronInfo, activeOrderId }) => {
                     imageSrc={product.image}
                     productName={product.name}
                     price={product.price}
-                    author={product.author}
-                    description={product.description}
                     onClick={() => handleCardClick(product.id)}
                   />
                 ))

@@ -44,16 +44,16 @@ const Login = ({ onLogin }) => {
 
       const isEmail = username.includes('@');
       
-      console.log("Username entered:", username);
-      console.log("Contains @?:", isEmail);
+      console.log("🔍 Username entered:", username);
+      console.log("🔍 Contains @?:", isEmail);
       
       if (isEmail) {
         // use Patron login
-        console.log("Attempting PATRON login");
+        console.log("🔵 Attempting PATRON login");
         tryLoginPatron(username, password, resultHandler);
       } else {
         
-        console.log("Attempting USER login");
+        console.log("🟢 Attempting USER login");
         tryLoginUser(username, password, resultHandler);
       }
       

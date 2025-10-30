@@ -38,7 +38,7 @@ const handleAddItem = (event) => {
       Name: itemName,
       Author: author || null,
       Description: description || null,
-      Genre: parseInt(genreId, 10),
+      Genre: genreId,
       SubGenre: parseInt(subgenreId, 10),
       Published: published ? new Date(published).toISOString() : null,
       LastUpdatedBy: "adminAccount",
@@ -385,7 +385,7 @@ const handleDeleteItem = () => {
               <div className="form-group">
                 <label>Genre ID<span className="required">*</span></label>
                 <input
-                  type="number"
+                  type="text"
                   placeholder="Genre ID"
                   value={genreId}
                   onChange={(e) => setGenreId(e.target.value)}

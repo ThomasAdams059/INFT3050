@@ -151,9 +151,23 @@ const ViewOrders = () => {
     }
   };
 
+  // --- NEW: Function to go back ---
+  const handleBackToDashboard = () => {
+    window.location.href = '/employeePage';
+  };
+
   return (
     <div className="main-container">
       <h1 className="main-heading custom-header-color">View All Orders</h1>
+      
+      {/* --- NEW: Back Button Added --- */}
+      <button 
+        onClick={handleBackToDashboard} 
+        className="admin-manage-button" // Re-using class
+        style={{ marginBottom: '20px', width: 'auto' }} // Added style
+      >
+        &larr; Back to Employee Dashboard
+      </button>
 
       {loading && <p>Loading orders...</p>}
       {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}

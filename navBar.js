@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 // --- 1. ACCEPT 'isAdmin' and 'onLogout' PROPS ---
-export default function Navbar({ isLoggedIn, userRole, onLogout, onSearch }) {
+export default function Navbar({ isLoggedIn, isAdmin, onLogout, onSearch }) {
     
   // State to hold the current value of the search input
     const [searchTerm, setSearchTerm] = useState("");
@@ -28,47 +28,10 @@ export default function Navbar({ isLoggedIn, userRole, onLogout, onSearch }) {
         }
     };
 
-  // determines account page URL based on user role
-  const getAccountHref = () => {
-    if (!isLoggedIn) {
-      return "/login";
-    }
-    
-    switch (userRole) {
-      case 'admin':
-        return '/adminAccount';
-      case 'employee':
-        return '/employeePage';
-      case 'patron':
-        return '/accountSettings';
-      default:
-        return '/login';
-    }
-  };
+    const accountHref = isLoggedIn 
+      ? (isAdmin ? "/adminAccount" : "/myAccount") 
+      : "/login";
 
-  // gets appropriate account button text based on role
-  const getAccountText = () => {
-    if (!isLoggedIn) {
-      return "Account";
-    }
-    
-    switch (userRole) {
-      case 'admin':
-        return 'Admin';
-      case 'employee':
-        return 'Employee';
-      case 'patron':
-        return 'Account';
-      default:
-        return 'Account';
-    }
-  };
-
-  const accountHref = getAccountHref();
-  const accountText = getAccountText();
-
-  // cart should only show for patrons
-  const showCart = isLoggedIn && userRole === 'patron';
     return (
       <nav className="nav">
         <a href="/" className="site-title">The Entertainment Guild</a>

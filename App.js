@@ -25,77 +25,33 @@ import PaymentMethods from './paymentMethod';
 import EmployeePage from './employeePage';
 import ViewAccounts from './viewAccounts';
 import ViewOrders from './viewOrders';
+import SearchResults from './searchResults';
+
+const API_BASE_URL = "http://localhost:3001/api/inft3050";
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  const [userRole, setUserRole] = useState(null);
-  const [patronInfo, setPatronInfo] = useState(null);
-  const [activeOrderId, setActiveOrderId] = useState(null);
-  //const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [lastSearchTerm, setLastSearchTerm] = useState("");
 
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
-        const response = await axios.get("http://localhost:3001/me", { 
-          withCredentials: true 
-        });
-        
-        console.log("=== APP.JS LOGIN CHECK ===");
-        console.log("Login check response:", response.data);
-        
-        if (response.data) {
-          setIsLoggedIn(true);
-          
-          // Determine user role from /me response
-          if (response.data.isAdmin === true) {
-            setUserRole('admin');
-            console.log("\User is ADMIN");
-          } else if (response.data.isEmployee === true || response.data.role === 'employee') {
-            setUserRole('employee');
-            console.log(" User is EMPLOYEE");
-          } else if (response.data.patronId || response.data.role === 'patron') {
-            setUserRole('patron');
-            setPatronInfo(response.data);
-            console.log("User is PATRON");
-            
-            // Fetch active order for patron's cart
-            if (response.data.patronId) {
-              await fetchActiveOrder(response.data.patronId);
-            }
-          }
+        // Hardcoded backend auth URL
+        const response = await axios.get("http://localhost:3001/me", { withCredentials: true });
+        setIsLoggedIn(true);
+        if (response.data && response.data.isAdmin === true) {
+          setIsAdmin(true);
         }
       } catch (error) {
-        console.log("Not logged in or session expired:", error.response?.status);
         setIsLoggedIn(false);
-        setUserRole(null);
-        setPatronInfo(null);
-        setActiveOrderId(null);
+        setIsAdmin(false);
       }
     };
 
     checkLoginStatus();
   }, []);
-
-    const fetchActiveOrder = async (patronId) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:3001/api/inft3050/Orders?filter[PatronId]=${patronId}&filter[Status]=inProgress`,
-        { withCredentials: true }
-      );
-      
-      if (response.data.list && response.data.list.length > 0) {
-        const activeOrder = response.data.list[0];
-        setActiveOrderId(activeOrder.ID);
-        console.log("Active order found:", activeOrder.ID);
-      } else {
-        console.log("No active order found for patron");
-      }
-    } catch (error) {
-      console.error("Error fetching active order:", error);
-    }
-  };
 
   const handleAddToCart = (item) => {
     setCartItems(prevItems => [...prevItems, item]);
@@ -103,82 +59,84 @@ function App() {
     console.log("Current cart:", [...cartItems, item]);
   };
 
-  const handleLogin = ( role= 'patron') => {
+  const handleLogin = (isAdmin = false) => {
     setIsLoggedIn(true);
-    setUserRole(role);
+    setIsAdmin(isAdmin);
 
-    console.log("=== HANDLELOGIN CALLED ===");
-    console.log("Role:", role);
-
-     // Redirect based on role
-    if (role === 'admin') {
-      window.location.href = '/adminAccount';
-    } else if (role === 'employee') {
-      window.location.href = '/employeePage';
-    } else {
-      window.location.href = '/accountSettings';
-    }
+    window.location.href = isAdmin ? '/adminAccount' : '/employeePage';
   };
 
   const handleLogout = async () => {
     try {
-      console.log("=== LOGOUT INITIATED ===");
-      await axios.post("http://localhost:3001/logout", {}, { 
-        withCredentials: true 
-      });
-      console.log("Logout successful");
-      alert("Logout Successful.");
+      // Hardcoded backend auth URL
+      await axios.post("http://localhost:3001/logout", {}, { withCredentials: true });
     } catch (error) {
       console.error("Error during logout:", error);
     } finally {
-      // Clear all state
+      alert("Logout Successful.");
       setIsLoggedIn(false);
-      setUserRole(null);
-      setPatronInfo(null);
-      setActiveOrderId(null);
+      setIsAdmin(false);
       window.location.href = "/";
     }
   };
 
-  
-
   const handleSearch = async (searchTerm) => {
     console.log("Search initiated for:", searchTerm);
+    
+    // Store the last search term for simple redirection, although SearchResults uses URL query
+    setLastSearchTerm(searchTerm); 
+
+    // 1. Convert search term to lowercase for filtering
     const normalizedSearchTerm = searchTerm.toLowerCase().replace(/\s/g, '');
 
     try {
-      // Hardcoded backend data URL
-      const response = await axios.get("http://localhost:3001/api/inft3050/Product", {
-        headers: {
-          'Accept': 'application/json'
-        },
-      });
+        // 2. Fetch all products from the /Product endpoint
+        const response = await axios.get(`${API_BASE_URL}/Product`,
+        {
+          headers: {
+            'Accept': 'application/json'
+          },
+        }
+      )
+        
+        const products = response.data.list;
 
-      const products = response.data.list;
+        if (!products || products.length === 0) {
+            alert(`Search failed: No products found on the server.`);
+            // Navigate with query parameter for consistency
+            window.location.href = "/searchresults?query=" + encodeURIComponent(searchTerm); 
+            return;
+        }
 
-      if (!products || products.length === 0) {
-        alert(`Search failed: No products found on the server.`);
-        return;
-      }
+        // 3. Filter for matches (partial or exact) on Name or Author
+        const matches = products.filter(product => {
+            if (!product.Name && !product.Author) return false;
+            
+            const name = product.Name?.toLowerCase().replace(/\s/g, '');
+            const author = product.Author?.toLowerCase().replace(/\s/g, '');
+            
+            // Check for partial match anywhere in Name or Author
+            return name.includes(normalizedSearchTerm) || author.includes(normalizedSearchTerm);
+        });
 
-      const foundProduct = products.find(product => {
-        if (!product.Name) return false;
-        const normalizedProductName = product.Name.toLowerCase().replace(/\s/g, '');
-        return normalizedProductName === normalizedSearchTerm;
-      });
-
-      if (foundProduct) {
-        const productId = foundProduct.ID;
-        const path = `/products?id=${productId}`;
-        console.log("Product found, navigating to:", path);
-        window.location.href = path;
-      } else {
-        alert(`Sorry, the product "${searchTerm}" was not found. Please try again.`);
-      }
+        // 4. Handle the result and navigate
+        if (matches.length === 1) {
+            // Only one result found: go straight to the product page
+            const productId = matches[0].ID;
+            const path = `/products?id=${productId}`;
+            
+            console.log("Single product found, navigating to:", path);
+            window.location.href = path;
+            
+        } else {
+            // Multiple or Zero results found: navigate to the search results page, passing the query in the URL
+            console.log(`${matches.length} products found, navigating to search results.`);
+            window.location.href = "/searchresults?query=" + encodeURIComponent(searchTerm);
+        }
 
     } catch (error) {
-      console.error("Error during product search:", error.response || error);
-      alert(`Search failed: Unable to connect to product API or unauthorized. Check server status/login.`);
+        console.error("Error during product search:", error.response || error);
+        alert(`Search failed: Unable to connect to product API or unauthorized. Check server status/login.`);
     }
   };
 
@@ -255,13 +213,16 @@ function App() {
       case "/viewOrders":
         component = <ViewOrders />;
         break;
+      case "/searchresults":
+            component = <SearchResults />;
+            break;
     }
   }
   return (
     <>
       <Navbar
         isLoggedIn={isLoggedIn}
-        userRole={userRole}
+        isAdmin={isAdmin}
         onLogout={handleLogout}
         onSearch={handleSearch}
       />

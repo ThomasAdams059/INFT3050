@@ -26,12 +26,17 @@ const generateSalt = () => {
 /* Axios database calls */
 // Login user
 const tryLoginUser = (username, password, setResult) => {
+
+  console.log("=== USERHELPERS: tryLoginUser ===");
+  console.log("Username:", username);
+
   const headers = {
     'Accept': 'application/json',
+    'Content-Type': 'application/json'
   };
   
   // POST credentials to login
-  axios.post(API_PREFIX_SHORT + "/login", { username: username, password: password }, {
+  axios.post(API_PREFIX_SHORT + "/login", { username: username, password: password, type: 'user' }, {
     headers: headers, 
     withCredentials: true
   })
@@ -47,15 +52,20 @@ const tryLoginUser = (username, password, setResult) => {
                     response.data.isAdmin === 'true' ||
                     response.data.isAdmin === 1;
 
-    console.log("5. Extracted isAdmin value:", isAdmin);
+    const isEmployee = response.data.isEmployee === true ||
+                       response.data.role === 'employee';                
+
+    console.log("Extracted isAdmin:", isAdmin);
+    console.log("Extracted isEmployee:", isEmployee);
 
     const resultObject = { 
       status: "Success!", 
       isAdmin: isAdmin, 
+      isEmployee: isEmployee,
       user: response.data
     };
 
-    console.log("6. Result object being sent:", resultObject);
+    console.log("Result object being sent:", resultObject);
 
     setResult(resultObject);
   }).catch((error) => {
@@ -64,6 +74,7 @@ const tryLoginUser = (username, password, setResult) => {
     setResult({ 
       status: "Error :(", 
       isAdmin: false, 
+      isEmployee: false,
       error: error.response?.data?.message || "Login failed"
     });
   });
@@ -72,12 +83,15 @@ const tryLoginUser = (username, password, setResult) => {
 
 // Login Patron or Customer
 const tryLoginPatron = (email, password, setResult) => {
+  
+  console.log("=== USERHELPERS: tryLoginPatron ===");
+  console.log("Email:", email);
+
   const headers = {
     'Accept': 'application/json',
+    'Content-Type': 'application/json'
   };
 
-  console.log("=== PATRON LOGIN ATTEMPT ===");
-  console.log("Email:", email);
 
  axios.get(API_PREFIX_LONG + "/Patrons", {
     headers: headers,
@@ -123,20 +137,49 @@ const tryLoginPatron = (email, password, setResult) => {
       if (hashedPassword === patron.HashPW) {
         console.log("Password match! Login successful");
         
-        const resultObject = {
-          status: "Success!",
-          isAdmin: false, // Patrons are NEVER admins
-          isPatron: true,
-          user: {
-            UserID: patron.UserID,
-            Email: patron.Email,
-            Name: patron.Name
-          }
-        };
 
-        setResult(resultObject);
+      // calls backend /login endpoint to create session
+        axios.post(
+          API_PREFIX_SHORT + "/login",
+          {
+            email: email,
+            password: password,
+            type: 'patron', // Help backend identify this as patron login
+            patronId: patron.UserID // Include patron ID
+          },
+          {
+            headers: headers,
+            withCredentials: true // CRITICAL for session management dont get rid
+          }
+        )
+        .then((loginResponse) => {
+          console.log("patron session created on backend");
+          
+          const resultObject = {
+            status: "Success!",
+            isAdmin: false,
+            isEmployee: false,
+            isPatron: true,
+            user: {
+              UserID: patron.UserID,
+              Email: patron.Email,
+              Name: patron.Name
+            }
+          };
+
+          setResult(resultObject);
+        })
+        .catch((loginError) => {
+          console.error("error creating patron session:", loginError);
+          setResult({
+            status: "Error :(",
+            isAdmin: false,
+            error: "Failed to create login session"
+          });
+        });
+
       } else {
-        console.log("Password mismatch!");
+        console.log("password mismatch");
         setResult({
           status: "Error :(",
           isAdmin: false,
@@ -153,8 +196,8 @@ const tryLoginPatron = (email, password, setResult) => {
     });
 
   }).catch((error) => {
-    console.log("=== PATRON LOGIN ERROR ===");
-    console.log(error);
+    console.log("=== USERHELPERS: Patron Fetch Error ===");
+    console.error(error);
     setResult({
       status: "Error :(",
       isAdmin: false,
@@ -162,7 +205,6 @@ const tryLoginPatron = (email, password, setResult) => {
     });
   });
 };
-
 
 
 // Add new user

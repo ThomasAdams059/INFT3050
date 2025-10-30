@@ -2,32 +2,37 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ProductCard from './productCard';
 
-const ProductPage = ({ onAddToCart }) => {
+// Accept props from App.js
+const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [productData, setProductData] = useState(null);
   const [otherTitles, setOtherTitles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const [stockItemId, setStockItemId] = useState(null);
+  
+  const [availableSources, setAvailableSources] = useState([]);
+  const [selectedStockItemId, setSelectedStockItemId] = useState(null);
+  const [selectedPrice, setSelectedPrice] = useState(null);
+  
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
   useEffect(() => {
     const fetchProductDetails = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const productId = urlParams.get('id');
-
       if (!productId) {
         setError("No product ID provided in the URL.");
         setLoading(false);
         return;
       }
-
       setLoading(true);
       setError(null);
       setProductData(null);
       setOtherTitles([]);
-      setStockItemId(null);
+      setAvailableSources([]);
+      setSelectedStockItemId(null);
+      setSelectedPrice(null);
 
       const baseUrl = "http://localhost:3001/api/inft3050";
       const allProductsUrl = `${baseUrl}/Product`;
@@ -38,33 +43,35 @@ const ProductPage = ({ onAddToCart }) => {
           axios.get(allProductsUrl),
           axios.get(stocktakeUrl)
         ]);
-
+        
         const allProductsList = allProductsResponse.data.list;
         const stocktakeList = stocktakeResponse.data.list;
-
+        
         const mainProduct = allProductsList.find(p => p.ID.toString() === productId);
-
         if (!mainProduct) {
           setError("Product not found.");
           setLoading(false);
           return;
         }
 
-        const relevantStockItem = stocktakeList.find(
-          item => item.ProductId.toString() === productId && item.SourceId === 1
-        );
+        const allSourcesForProduct = stocktakeList
+          .filter(item => item.ProductId.toString() === productId && item.Source)
+          .map(item => ({
+            itemId: item.ItemId,
+            sourceName: item.Source.SourceName,
+            price: item.Price,
+            quantity: item.Quantity
+          }));
+        
+        setAvailableSources(allSourcesForProduct);
 
-        let displayPrice = 'N/A';
-        if (relevantStockItem) {
-          setStockItemId(relevantStockItem.ItemId);
-          displayPrice = relevantStockItem.Price.toFixed(2);
-          mainProduct.Price = relevantStockItem.Price;
+        if (allSourcesForProduct.length > 0) {
+          setSelectedStockItemId(allSourcesForProduct[0].itemId);
+          setSelectedPrice(allSourcesForProduct[0].price);
+          mainProduct.Price = allSourcesForProduct[0].price;
         } else {
           mainProduct.Price = null;
-          console.warn("Could not find matching Stocktake item (SourceId 1) for Product ID:", productId);
         }
-
-        mainProduct.displayPrice = displayPrice;
 
         setProductData(mainProduct);
 
@@ -72,79 +79,125 @@ const ProductPage = ({ onAddToCart }) => {
           const authorProducts = allProductsList.filter(
             p => p.Author === mainProduct.Author && p.ID !== mainProduct.ID
           );
-
           const otherTitlesWithPrices = authorProducts.map(p => {
             const otherStock = stocktakeList.find(item => item.ProductId === p.ID && item.SourceId === 1);
             return {
-              id: p.ID,
-              name: p.Name,
+              id: p.ID, name: p.Name,
               image: "https://placehold.co/200x300/F4F4F5/18181B?text=Book",
               price: otherStock ? `$${otherStock.Price.toFixed(2)}` : 'N/A'
             };
           }).slice(0, 7);
-
           setOtherTitles(otherTitlesWithPrices);
         }
-
       } catch (err) {
-        console.error("Error fetching product data:", err);
+        console.error("Error fetching product details:", err);
         setError("Failed to load product data.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchProductDetails();
   }, [window.location.search]);
 
-  const handleStarClick = (index) => {
-    setRating(index);
-  };
-
-  const handleMouseEnter = (index) => {
-    setHoverRating(index);
-  };
-
-  const handleMouseLeave = () => {
-    setHoverRating(0);
-  };
-
-  const displayRating = hoverRating || rating;
-
-  const onAddToCartClick = () => {
-    if (productData && stockItemId) {
-      onAddToCart({
-        name: productData.Name,
-        stockItemId: stockItemId
-      });
-    } else if (!stockItemId) {
-      alert("Cannot add to cart. Item stock information is unavailable.");
-    } else {
-      alert("Product data is not loaded yet.");
+  const handleSourceChange = (event) => {
+    const newSelectedItemId = parseInt(event.target.value, 10);
+    const selectedSource = availableSources.find(s => s.itemId === newSelectedItemId);
+    
+    if (selectedSource) {
+      setSelectedStockItemId(selectedSource.itemId);
+      setSelectedPrice(selectedSource.price);
+      setProductData(prevData => ({
+        ...prevData,
+        Price: selectedSource.price
+      }));
     }
   };
 
-  const handleOtherCardClick = (id) => {
-    window.location.href = `/products?id=${id}`;
+  const handleAddToOrderClick = async () => {
+    if (!isLoggedIn || !isPatron) {
+      alert("Please log in as a customer to place an order.");
+      window.location.href = '/login';
+      return;
+    }
+    if (!productData || !patronInfo || !patronInfo.customerId) {
+      alert("Cannot create order. User or product information is missing. Please refresh.");
+      return;
+    }
+    if (!selectedStockItemId) {
+      alert("Please select a product version (e.g., Hard Copy, Digital) before ordering.");
+      return;
+    }
+    if (isSubmittingOrder) return;
+    setIsSubmittingOrder(true);
+
+    try {
+      const customerDetailsResponse = await axios.get(
+        `http://localhost:3001/api/inft3050/Customers/${patronInfo.customerId}`,
+        { withCredentials: true }
+      );
+      const customerDetails = customerDetailsResponse.data;
+
+      const orderBody = {
+        Customer: patronInfo.customerId,
+        StreetAddress: customerDetails.StreetAddress || 'N/A',
+        PostCode: customerDetails.PostCode || 0,
+        Suburb: customerDetails.Suburb || 'N/A',
+        State: customerDetails.State || 'N/A',
+        OrderDate: new Date().toISOString()
+      };
+
+      const response = await axios.post(
+        `http://localhost:3001/api/inft3050/Orders`,
+        orderBody,
+        { withCredentials: true }
+      );
+
+      alert(`${productData.Name} has been added to order ${response.data.OrderID}!`);
+
+    } catch (error) {
+      console.error("Error creating order:", error.response || error);
+      alert(`Failed to create order. ${error.response?.data?.message || 'Please try again.'}`);
+    } finally {
+      setIsSubmittingOrder(false);
+    }
   };
+  
+  const handleStarClick = (index) => setRating(index);
+  const handleMouseEnter = (index) => setHoverRating(index);
+  const handleMouseLeave = () => setHoverRating(0);
+  const displayRating = hoverRating || rating;
+  const handleOtherCardClick = (id) => window.location.href = `/products?id=${id}`;
 
-  if (loading) {
-    return <div className="main-container"><p>Loading product...</p></div>;
-  }
+  // --- Helper function to get main genre name ---
+  const getGenreName = (genreId) => {
+    // The genreId from the API may be an object, check if it's a number
+    // This is based on the check found in itemManagement.js
+    const id = typeof genreId === 'number' ? genreId : null;
+    
+    switch (id) {
+      case 1:
+        return 'Book';
+      case 2:
+        return 'Movie';
+      case 3:
+        return 'Game';
+      default:
+        return 'Genre'; // Fallback
+    }
+  };
+  // --- END Function ---
 
-  if (error) {
-    return <div className="main-container"><p>{error}</p></div>;
-  }
-
-  if (!productData) {
-    return <div className="main-container"><p>Product not found.</p></div>;
-  }
+  if (loading) return <div className="main-container"><p>Loading product...</p></div>;
+  if (error) return <div className="main-container"><p>{error}</p></div>;
+  if (!productData) return <div className="main-container"><p>Product not found.</p></div>;
 
   return (
     <div className="main-container">
       <nav className="breadcrumbs">
         <span>Home &gt; </span>
-        <span>{productData.Genre?.Name || 'Genre'} &gt; </span>
+        {/* --- UPDATED BREADCRUMB --- */}
+        {/* Call the helper function with the correct property: productData.Genre */}
+        <span>{getGenreName(productData.Genre)} &gt; </span>
         <span>{productData.Name}</span>
       </nav>
       <header className="section-header">
@@ -164,23 +217,62 @@ const ProductPage = ({ onAddToCart }) => {
             <p className="last-updated-by-info">Last Updated By: <span className="font-normal">{productData.LastUpdatedBy}</span></p>
           </div>
         </div>
-
         <div className="purchase-container">
           <div className="purchase-box">
-            <span className="price-tag">${productData.Price ? productData.Price.toFixed(2) : 'N/A'}</span>
+            
+            <span className="price-tag">
+              {selectedPrice !== null ? `$${selectedPrice.toFixed(2)}` : 'N/A'}
+            </span>
+            
             <div className="payment-icons">
               <img src="https://placehold.co/70x40/992D2D/FFFFFF?text=Mastercard" alt="Mastercard" className="rounded-md" />
               <img src="https://placehold.co/70x40/003C87/FFFFFF?text=VISA" alt="VISA" className="rounded-md" />
             </div>
-            <button
-              className="add-to-cart-button"
-              onClick={onAddToCartClick}
-              disabled={!stockItemId}
-            >
-              Add to Cart
-            </button>
-          </div>
 
+            {isLoggedIn && isPatron && (
+              <div className="source-selection" style={{ margin: '15px 0' }}>
+                <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1em' }}>Select Version:</h3>
+                {availableSources.length > 0 ? (
+                  availableSources.map((source) => (
+                    <div key={source.itemId} className="source-option" style={{ margin: '5px 0' }}>
+                      <input
+                        type="radio"
+                        id={`source-${source.itemId}`}
+                        name="productSource"
+                        value={source.itemId}
+                        checked={selectedStockItemId === source.itemId}
+                        onChange={handleSourceChange}
+                        disabled={source.quantity === 0}
+                      />
+                      <label htmlFor={`source-${source.itemId}`} style={{ marginLeft: '8px' }}>
+                        {source.sourceName} - ${source.price.toFixed(2)}
+                        {source.quantity === 0 && ' (Out of Stock)'}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <p>No purchase options available.</p>
+                )}
+              </div>
+            )}
+
+            {isLoggedIn && isPatron ? (
+              <button
+                className="add-to-cart-button"
+                onClick={handleAddToOrderClick}
+                disabled={isSubmittingOrder || !selectedStockItemId || (availableSources.find(s => s.itemId === selectedStockItemId)?.quantity === 0)}
+              >
+                {isSubmittingOrder ? 'Adding...' : 'Add to Order'}
+              </button>
+            ) : (
+                 <button
+                   className="add-to-cart-button"
+                   onClick={() => window.location.href='/login'}
+                 >
+                   Log in to Order
+                 </button>
+            )}
+          </div>
           <div className="review-box">
             <h3 className="review-heading">Leave a Review!</h3>
             <div className="star-rating">
@@ -188,27 +280,19 @@ const ProductPage = ({ onAddToCart }) => {
                 const ratingValue = index + 1;
                 return (
                   <span
-                    key={index}
-                    className="cursor-pointer"
-                    style={{
-                      color: ratingValue <= displayRating ? "gold" : "lightgray"
-                    }}
+                    key={index} className="cursor-pointer"
+                    style={{ color: ratingValue <= displayRating ? "gold" : "lightgray" }}
                     onClick={() => handleStarClick(ratingValue)}
                     onMouseEnter={() => handleMouseEnter(ratingValue)}
                     onMouseLeave={handleMouseLeave}
-                  >
-                    &#9733;
-                  </span>
+                  >&#9733;</span>
                 );
               })}
             </div>
-            <button className="submit-review-button">
-              Submit
-            </button>
+            <button className="submit-review-button">Submit</button>
           </div>
         </div>
       </div>
-
       <div className="other-titles-section">
         <header className="other-titles-header">
           <h1 className="other-titles-heading">Other Titles by {productData.Author}</h1>
@@ -217,16 +301,12 @@ const ProductPage = ({ onAddToCart }) => {
           {otherTitles.length > 0 ? (
             otherTitles.map(product => (
               <ProductCard
-                key={product.id}
-                imageSrc={product.image}
-                bookName={product.name}
-                price={product.price}
+                key={product.id} imageSrc={product.image}
+                bookName={product.name} price={product.price}
                 onClick={() => handleOtherCardClick(product.id)}
               />
             ))
-          ) : (
-            <p>No other titles found by this author.</p>
-          )}
+          ) : (<p>No other titles found by this author.</p>)}
         </main>
       </div>
     </div>

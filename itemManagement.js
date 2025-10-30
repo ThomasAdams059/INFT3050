@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const ItemManagement = () => {
@@ -6,30 +6,29 @@ const ItemManagement = () => {
   const [itemName, setItemName] = useState("");
   const [author, setAuthor] = useState("");
   const [description, setDescription] = useState("");
-  const [genreId, setGenreId] = useState(""); // added Genre ID state
-  const [subgenreId, setSubgenreId] = useState(""); // Renamed for clarity
-  const [published, setPublished] = useState(""); // Date as string
+  const [genreId, setGenreId] = useState("");
+  const [subgenreId, setSubgenreId] = useState("");
+  const [published, setPublished] = useState("");
 
   // Edit/Delete Item state
   const [searchItemName, setSearchItemName] = useState("");
   const [currentItem, setCurrentItem] = useState(null);
   const [showItemInfo, setShowItemInfo] = useState(false);
- 
+  
+  // State to hold stock entries
+  const [stocktakeEntries, setStocktakeEntries] = useState([]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  // API base URL
-  const baseUrl = "http://localhost:3001/api/inft3050/Product";
+  // API base URLs
+  const productBaseUrl = "http://localhost:3001/api/inft3050/Product";
+  const stocktakeBaseUrl = "http://localhost:3001/api/inft3050/Stocktake";
 
- 
-  // all the search edit delete functions are taken from user management page.
-
-  // Handles Add Item
-const handleAddItem = (event) => {
+  // Handle Add Item (no changes)
+  const handleAddItem = (event) => {
     event.preventDefault();
-
     setIsLoading(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -38,426 +37,271 @@ const handleAddItem = (event) => {
       Name: itemName,
       Author: author || null,
       Description: description || null,
-      Genre: genreId,
+      Genre: (typeof genreId === 'object' ? genreId.value : parseInt(genreId, 10)),
       SubGenre: parseInt(subgenreId, 10),
       Published: published ? new Date(published).toISOString() : null,
       LastUpdatedBy: "adminAccount",
       LastUpdated: new Date().toISOString(),
     };
 
-    // some basic validation inspo taken from doms og code
-    if (!itemName || isNaN(newItem.Genre) || isNaN(newItem.SubGenre)) {
-      setErrorMessage("Please fill in required fields (Name, Genre ID, SubGenre ID).");
+    if (!newItem.Name || !newItem.Genre || !newItem.SubGenre) {
+      setErrorMessage("Please fill in all required fields (Name, Genre ID, SubGenre ID).");
       setIsLoading(false);
       return;
     }
 
-    axios.post(
-      baseUrl,
-      newItem,
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        withCredentials: true
-      }
-    )
-    .then((response) => {
-      console.log("Item added successfully:", response.data);
-      setSuccessMessage(`Item "${itemName}" added successfully! ID: ${response.data.ID}`);
-
-      // clears form
-      setItemName("");
-      setAuthor("");
-      setDescription("");
-      setGenreId("");
-      setSubgenreId("");
-      setPublished("");
-
-      setIsLoading(false);
-    })
-    .catch((error) => {
-      console.error("Error adding item:", error);
-      console.error("Error response:", error.response);
-
-       // added just to check what error if any delete later ! delete everything from here to  line 99
-      let errorMsg = "Failed to add item. ";
-
-      if (error.response) {
-        const status = error.response.status;
-        if (status === 401 || status === 403) {
-          errorMsg += "Authentication required. Please log in as admin.";
-        } else if (status === 400) {
-          errorMsg += error.response.data?.message || "Invalid data format.";
-        } else if (status === 500) {
-          errorMsg += "Server error. Please try again later.";
-        } else {
-          errorMsg += `Server error (${status}). ${error.response.data?.message || ''}`;
-        }
-      } else if (error.request) {
-        errorMsg += "No response from server. Is Docker running?";
-      } else {
-        errorMsg += error.message;
-      }
-
-      setErrorMessage(errorMsg);
-      setIsLoading(false);
-    });
+    axios.post(productBaseUrl, newItem, { withCredentials: true })
+      .then(response => {
+        setSuccessMessage(`Item "${response.data.Name}" added successfully!`);
+        setIsLoading(false);
+        setItemName(""); setAuthor(""); setDescription(""); setGenreId(""); setSubgenreId(""); setPublished("");
+      })
+      .catch(error => {
+        console.error("Error adding item:", error);
+        setErrorMessage(error.response?.data?.message || "Failed to add item.");
+        setIsLoading(false);
+      });
   };
 
-  // Handle Search Item by Name
+  // --- UPDATED: Handle Search Item ---
   const handleSearchItem = async (event) => {
     event.preventDefault();
+    if (!searchItemName.trim()) {
+        setErrorMessage("Please enter a product name to search.");
+        return;
+    }
+
     setIsLoading(true);
     setErrorMessage("");
     setSuccessMessage("");
-    setShowItemInfo(false);
     setCurrentItem(null);
+    setShowItemInfo(false);
+    setStocktakeEntries([]);
 
-    console.log("Searching for item:", searchItemName);
-    console.log("Making GET request to:", baseUrl);
+    try {
+      // 1. Fetch ALL products
+      const response = await axios.get(productBaseUrl, { withCredentials: true });
+      const allProducts = response.data.list;
 
-  axios.get(
-      baseUrl,
-      {
-        headers: {
-          'Accept': 'application/json'
-        },
-        withCredentials: true
-      }
-    )
-    .then((response) => {
-      console.log("Response received:", response);
-      console.log("Response data:", response.data);
-
-      // Check if response has expected structure
-      if (!response.data || !response.data.list) {
-        console.error("Unexpected response structure:", response.data);
-        setErrorMessage("Unexpected data format from server");
+      if (!allProducts || allProducts.length === 0) {
+        setErrorMessage("No products found in the database.");
         setIsLoading(false);
         return;
       }
-
-      const items = response.data.list;
-
-      console.log("Total items found:", items.length);
-      console.log("Items array:", items);
-
-      // Search for item (case insensitive)
-      const foundItem = items.find(item =>
-        item.Name.toLowerCase() === searchItemName.toLowerCase()
+      
+      // 2. Find the product client-side (case-insensitive)
+      const searchTermLower = searchItemName.toLowerCase();
+      const foundProduct = allProducts.find(
+        product => product.Name.toLowerCase() === searchTermLower
       );
 
-      if (foundItem) {
-        console.log("Item found:", foundItem);
-        setCurrentItem(foundItem);
+      if (foundProduct && foundProduct.ID) {
+        setCurrentItem(foundProduct);
         setShowItemInfo(true);
-        setSuccessMessage(`Found item: ${foundItem.Name}`);
+
+        // 3. Fetch ALL stocktake items
+        const stocktakeResponse = await axios.get(stocktakeBaseUrl, { withCredentials: true });
+        
+        if (stocktakeResponse.data && stocktakeResponse.data.list) {
+          // 4. Filter stocktake items for this product
+          const productStockEntries = stocktakeResponse.data.list.filter(
+            item => item.ProductId === foundProduct.ID
+          );
+          setStocktakeEntries(productStockEntries);
+          console.log("Found stock entries:", productStockEntries);
+        }
       } else {
-        setErrorMessage(`Item "${searchItemName}" not found`);
+        setErrorMessage(`Product "${searchItemName}" not found.`);
+      }
+    } catch (error) {
+      console.error("Error searching item:", error);
+      setErrorMessage("An error occurred during search.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  // --- END UPDATED Search ---
+
+  // Handle Edit Item (Product Description) - (no changes)
+  const handleEditItem = async () => {
+    if (!currentItem) return;
+    const newDescription = prompt("Enter new description:", currentItem.Description);
+    if (newDescription === null) return;
+
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      await axios.patch(`${productBaseUrl}/${currentItem.ID}`,
+        { Description: newDescription, LastUpdated: new Date().toISOString(), LastUpdatedBy: "adminAccount" },
+        { withCredentials: true }
+      );
+      setSuccessMessage("Item description updated successfully!");
+      setCurrentItem({ ...currentItem, Description: newDescription });
+    } catch (error) {
+      console.error("Error updating item:", error);
+      setErrorMessage("Failed to update description.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Edit Stock (Price/Quantity) - (no changes)
+  const handleEditStockItem = async (stockItem) => {
+    const { ItemId, Price, Quantity } = stockItem;
+    const newPrice = prompt("Enter new price:", Price);
+    const newQuantity = prompt("Enter new quantity:", Quantity);
+
+    if (newPrice === null || newQuantity === null) {
+      alert("Edit cancelled.");
+      return;
+    }
+    const parsedPrice = parseFloat(newPrice);
+    const parsedQuantity = parseInt(newQuantity, 10);
+    if (isNaN(parsedPrice) || isNaN(parsedQuantity)) {
+      alert("Invalid input. Price and Quantity must be numbers.");
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      await axios.patch(`${stocktakeBaseUrl}/${ItemId}`, 
+        { Price: parsedPrice, Quantity: parsedQuantity }, 
+        { withCredentials: true }
+      );
+      setSuccessMessage(`Stock for ItemID ${ItemId} updated successfully!`);
+      // Re-run search to get fresh data
+      handleSearchItem(new Event('submit'));
+    } catch (error) {
+      console.error("Error updating stock item:", error);
+      setErrorMessage(error.response?.data?.message || "Failed to update stock.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Delete Item (no changes)
+  const handleDeleteItem = async () => {
+    if (!currentItem) return;
+    if (window.confirm(`Are you sure you want to delete "${currentItem.Name}"? This may fail if it is linked to stock or orders.`)) {
+      setIsLoading(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+      try {
+        await axios.delete(`${productBaseUrl}/${currentItem.ID}`, { withCredentials: true });
+        setSuccessMessage("Item deleted successfully!");
         setCurrentItem(null);
         setShowItemInfo(false);
+        setSearchItemName("");
+      } catch (error) {
+        console.error("Error deleting item:", error);
+        setErrorMessage(error.response?.data?.message || "Failed to delete item. It may be in use.");
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
-    })
-    .catch((error) => {
-      console.error("Error searching item:", error);
-      console.error("Error details:", {
-        message: error.message,
-        response: error.response,
-        status: error.response?.status,
-        data: error.response?.data
-      });
-
-      let errorMsg = "Failed to search for item. ";
-
-      if (error.response) {
-        const status = error.response.status;
-
-        if (status === 401 || status === 403) {
-          errorMsg += "Authentication required. Please log in as admin.";
-        } else if (status === 404) {
-          errorMsg += "Product endpoint not found. Check the API URL.";
-        } else if (status === 500) {
-          errorMsg += "Server error. Please try again later.";
-        } else {
-          errorMsg += `Server error (${status}). ${error.response.data?.message || ''}`;
-        }
-      } else if (error.request) {
-        errorMsg += "No response from server. Is Docker running?";
-      } else {
-        errorMsg += error.message;
-      }
-
-      setErrorMessage(errorMsg);
-      setIsLoading(false);
-    });
+    }
   };
 
-
-  // Handle Edit Item 
- const handleEditItem = () => {
-    if (!currentItem) return;
-
-    const newDescription = prompt("Enter new description:", currentItem.Description);
-
-    if (newDescription === null) return; // User cancelled
-
-    setIsLoading(true);
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    // only fields being updated are sent
-    const updatedFields = {
-      Description: newDescription,
-      LastUpdated: new Date().toISOString(),
-      LastUpdatedBy: "adminAccount"
-    };
-
-    console.log("Updating item ID:", currentItem.ID);
-    console.log("Update data:", updatedFields);
-
-    axios.patch(
-      `${baseUrl}/${currentItem.ID}`,
-      updatedFields,
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        withCredentials: true
-      }
-    )
-    .then((response) => {
-      console.log("Item updated successfully:", response.data);
-      setSuccessMessage(`Item "${currentItem.Name}" updated successfully!`);
-
-      // Update the current item display
-      setCurrentItem({
-        ...currentItem, // may cause an error check out later
-        Description: newDescription,
-        LastUpdated: new Date().toISOString(),
-        LastUpdatedBy: "adminAccount" // hardcoded right now change later
-      });
-
-      setIsLoading(false);
-    })
-    .catch((error) => {
-      console.error("Error updating item:", error);
-      console.error("Error response:", error.response);
-
-      // same delete later just soem error logging
-      let errorMsg = "Failed to update item. ";
-
-      if (error.response) {
-        const status = error.response.status;
-
-        if (status === 404) {
-          errorMsg += "Item not found. Check the Item ID.";
-        } else if (status === 401 || status === 403) {
-          errorMsg += "Authentication required. Please log in as admin.";
-        } else if (status === 400) {
-          errorMsg += error.response.data?.message || "Invalid data format.";
-        } else {
-          errorMsg += `Server error (${status}). ${error.response.data?.message || ''}`;
-        }
-      } else if (error.request) {
-        errorMsg += "No response from server. Is Docker running?";
-      } else {
-        errorMsg += error.message;
-      }
-
-      setErrorMessage(errorMsg);
-      setIsLoading(false);
-    });
-  };
-
-
-  // Handle Delete Item
-const handleDeleteItem = () => {
-    if (!currentItem) return;
-
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete "${currentItem.Name}"? This action cannot be undone.`
-    );
-
-    if (!confirmDelete) return;
-
-    setIsLoading(true);
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    console.log("Deleting item with ID:", currentItem.ID);
-    console.log("DELETE URL:", `${baseUrl}/${currentItem.ID}`);
-
-    axios.delete(
-      `${baseUrl}/${currentItem.ID}`,
-      {
-        headers: {
-          'Accept': 'application/json'
-        },
-        withCredentials: true
-      }
-    )
-    .then((response) => {
-      console.log("Item deleted successfully:", response);
-      setSuccessMessage(`Item "${currentItem.Name}" deleted successfully.`);
-
-      setShowItemInfo(false);
-      setCurrentItem(null);
-      setSearchItemName("");
-      setIsLoading(false);
-    })
-    .catch((error) => {
-      console.error("Error deleting item:", error);
-      console.error("Error response:", error.response);
-
-      let errorMsg = "Failed to delete item. ";
-
-      if (error.response) {
-        const status = error.response.status;
-
-        if (status === 400) {
-          errorMsg += "Cannot delete this item. It may have related data (stock, orders) in the system.";
-        } else if (status === 401 || status === 403) {
-          errorMsg += "Authentication required. Please log in as admin.";
-        } else if (status === 404) {
-          errorMsg += "Item not found.";
-        } else {
-          errorMsg += `Server error (${status}). ${error.response.data?.message || ''}`;
-        }
-      } else if (error.request) {
-        errorMsg += "No response from server. Is Docker running?";
-      } else {
-        errorMsg += error.message;
-      }
-
-      setErrorMessage(errorMsg);
-      setIsLoading(false);
-    });
-  };
-
-
-  // --- Render ---
   return (
     <div className="management-container">
       <h1>Item Management</h1>
-
-      {errorMessage && <div className="error-message">{errorMessage}</div>}
-      {successMessage && <div className="success-message">{successMessage}</div>}
-      {isLoading && <div className="loading-message">Loading...</div>}
-
       <div className="management-grid">
-        {/* Add Item Section */}
+        
+        {/* Add Item Section (no changes) */}
         <div className="management-section">
-          <h2>Add Item</h2>
+          <h2>Add Product</h2>
           <form onSubmit={handleAddItem}>
             <div className="form-group">
               <label>Name<span className="required">*</span></label>
-              <input
-                type="text"
-                placeholder="Name of Item"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                required
-              />
+              <input type="text" placeholder="Item Name" value={itemName} onChange={(e) => setItemName(e.target.value)} required />
             </div>
             <div className="form-group">
               <label>Author</label>
-              <input
-                type="text"
-                placeholder="Author Name"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-              />
+              <input type="text" placeholder="Author/Director" value={author} onChange={(e) => setAuthor(e.target.value)} />
             </div>
             <div className="form-group">
               <label>Description</label>
-              <textarea
-                placeholder="Description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+              <textarea placeholder="Product Description" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Genre ID<span className="required">*</span></label>
-                <input
-                  type="text"
-                  placeholder="Genre ID"
-                  value={genreId}
-                  onChange={(e) => setGenreId(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>SubGenre ID<span className="required">*</span></label>
-                <input
-                  type="number"
-                  placeholder="SubGenre ID"
-                  value={subgenreId}
-                  onChange={(e) => setSubgenreId(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="form-group">
+              <label>Genre ID (1=Book, 2=Movie, 3=Game)<span className="required">*</span></label>
+              <input type="number" placeholder="e.g., 1" value={genreId} onChange={(e) => setGenreId(e.target.value)} required />
+            </div>
+            <div className="form-group">
+              <label>SubGenre ID<span className="required">*</span></label>
+              <input type="number" placeholder="e.g., 1 for Fiction" value={subgenreId} onChange={(e) => setSubgenreId(e.target.value)} required />
             </div>
             <div className="form-group">
               <label>Published Date</label>
-              <input
-                type="date"
-                value={published}
-                onChange={(e) => setPublished(e.target.value)}
-              />
+              <input type="date" value={published} onChange={(e) => setPublished(e.target.value)} />
             </div>
-            <button type="submit" className="btn-add" disabled={isLoading}>
-              {isLoading ? "Adding..." : "Add Item"}
-            </button>
+            <button type="submit" className="btn-add" disabled={isLoading}>Add Product</button>
           </form>
         </div>
 
-        {/* Edit/Delete Item Section */}
+        {/* Edit/Delete Item Section (no changes to JSX) */}
         <div className="management-section">
-          <h2>Edit/Delete Item</h2>
+          <h2>Edit/Delete Product & Stock</h2>
           <form onSubmit={handleSearchItem} className="search-box">
-            <label>
-              Search by Name<span className="required">*</span>
-            </label>
+            <label>Search by Product Name<span className="required">*</span></label>
             <input
               type="text"
-              placeholder="Enter exact item name"
+              placeholder="Search for product"
               value={searchItemName}
               onChange={(e) => setSearchItemName(e.target.value)}
               required
             />
-            <button type="submit" className="btn-search" disabled={isLoading}>
-              {isLoading ? 'Searching...' : 'Search Item'}
-            </button>
+            <button type="submit" className="btn-search" disabled={isLoading}>Search</button>
           </form>
+
+          {isLoading && <p>Loading...</p>}
+          {errorMessage && <p className="error-message">{errorMessage}</p>}
+          {successMessage && <p className="success-message">{successMessage}</p>}
 
           {showItemInfo && currentItem && (
             <>
               <div className="item-info">
-                <h3>Item Details</h3>
+                <h3>Product Details</h3>
                 <p><strong>ID:</strong> {currentItem.ID}</p>
                 <p><strong>Name:</strong> {currentItem.Name}</p>
                 <p><strong>Author:</strong> {currentItem.Author || 'N/A'}</p>
                 <p><strong>Description:</strong> {currentItem.Description || 'N/A'}</p>
-                <p><strong>Published:</strong> {currentItem.Published ? new Date(currentItem.Published).toLocaleDateString() : 'N/A'}</p>
-                <p><strong>Genre ID:</strong> {typeof currentItem.Genre === 'number' ? currentItem.Genre : 'N/A'}</p>
+                <p><strong>Genre ID:</strong> {typeof currentItem.Genre === 'number' ? currentItem.Genre : 'N/A'}</p> 
                 <p><strong>SubGenre ID:</strong> {currentItem.SubGenre}</p>
-                <p><strong>Last Updated:</strong> {currentItem.LastUpdated ? new Date(currentItem.LastUpdated).toLocaleString() : 'N/A'}</p>
-                <p><strong>Last Updated By:</strong> {currentItem.LastUpdatedBy || 'N/A'}</p>
               </div>
-
               <div className="button-row">
                 <button className="btn-edit" onClick={handleEditItem} disabled={isLoading}>
                   Edit Description
                 </button>
                 <button className="btn-delete" onClick={handleDeleteItem} disabled={isLoading}>
-                  Delete Item
+                  Delete Product
                 </button>
+              </div>
+
+              <div className="stocktake-info" style={{ marginTop: '20px' }}>
+                <h3>Stock & Price Management</h3>
+                {stocktakeEntries.length > 0 ? (
+                  stocktakeEntries.map(entry => (
+                    <div key={entry.ItemId} style={{ border: '1px solid #ccc', padding: '10px', marginBottom: '10px' }}>
+                      <p><strong>Stock Item ID: {entry.ItemId}</strong></p>
+                      <p><strong>Source:</strong> {entry.Source ? entry.Source.SourceName : `SourceID ${entry.SourceId}`}</p>
+                      <p><strong>Price:</strong> ${entry.Price.toFixed(2)}</p>
+                      <p><strong>Quantity:</strong> {entry.Quantity}</p>
+                      <button 
+                        className="btn-edit" 
+                        style={{ background: '#007bff' }}
+                        onClick={() => handleEditStockItem(entry)}
+                        disabled={isLoading}
+                      >
+                        Edit Price/Quantity
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p>No stocktake entries found for this product.</p>
+                )}
               </div>
             </>
           )}

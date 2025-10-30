@@ -29,25 +29,73 @@ import ViewOrders from './viewOrders';
 function App() {
   const [cartItems, setCartItems] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+
+  const [userRole, setUserRole] = useState(null);
+  const [patronInfo, setPatronInfo] = useState(null);
+  const [activeOrderId, setActiveOrderId] = useState(null);
+  //const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
-        // Hardcoded backend auth URL
-        const response = await axios.get("http://localhost:3001/me", { withCredentials: true });
-        setIsLoggedIn(true);
-        if (response.data && response.data.isAdmin === true) {
-          setIsAdmin(true);
+        const response = await axios.get("http://localhost:3001/me", { 
+          withCredentials: true 
+        });
+        
+        console.log("=== APP.JS LOGIN CHECK ===");
+        console.log("Login check response:", response.data);
+        
+        if (response.data) {
+          setIsLoggedIn(true);
+          
+          // Determine user role from /me response
+          if (response.data.isAdmin === true) {
+            setUserRole('admin');
+            console.log("\User is ADMIN");
+          } else if (response.data.isEmployee === true || response.data.role === 'employee') {
+            setUserRole('employee');
+            console.log(" User is EMPLOYEE");
+          } else if (response.data.patronId || response.data.role === 'patron') {
+            setUserRole('patron');
+            setPatronInfo(response.data);
+            console.log("User is PATRON");
+            
+            // Fetch active order for patron's cart
+            if (response.data.patronId) {
+              await fetchActiveOrder(response.data.patronId);
+            }
+          }
         }
       } catch (error) {
+        console.log("Not logged in or session expired:", error.response?.status);
         setIsLoggedIn(false);
-        setIsAdmin(false);
+        setUserRole(null);
+        setPatronInfo(null);
+        setActiveOrderId(null);
       }
     };
 
     checkLoginStatus();
   }, []);
+
+    const fetchActiveOrder = async (patronId) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3001/api/inft3050/Orders?filter[PatronId]=${patronId}&filter[Status]=inProgress`,
+        { withCredentials: true }
+      );
+      
+      if (response.data.list && response.data.list.length > 0) {
+        const activeOrder = response.data.list[0];
+        setActiveOrderId(activeOrder.ID);
+        console.log("Active order found:", activeOrder.ID);
+      } else {
+        console.log("No active order found for patron");
+      }
+    } catch (error) {
+      console.error("Error fetching active order:", error);
+    }
+  };
 
   const handleAddToCart = (item) => {
     setCartItems(prevItems => [...prevItems, item]);
@@ -55,26 +103,44 @@ function App() {
     console.log("Current cart:", [...cartItems, item]);
   };
 
-  const handleLogin = (isAdmin = false) => {
+  const handleLogin = ( role= 'patron') => {
     setIsLoggedIn(true);
-    setIsAdmin(isAdmin);
+    setUserRole(role);
 
-    window.location.href = isAdmin ? '/adminAccount' : '/employeePage';
+    console.log("=== HANDLELOGIN CALLED ===");
+    console.log("Role:", role);
+
+     // Redirect based on role
+    if (role === 'admin') {
+      window.location.href = '/adminAccount';
+    } else if (role === 'employee') {
+      window.location.href = '/employeePage';
+    } else {
+      window.location.href = '/accountSettings';
+    }
   };
 
   const handleLogout = async () => {
     try {
-      // Hardcoded backend auth URL
-      await axios.post("http://localhost:3001/logout", {}, { withCredentials: true });
+      console.log("=== LOGOUT INITIATED ===");
+      await axios.post("http://localhost:3001/logout", {}, { 
+        withCredentials: true 
+      });
+      console.log("Logout successful");
+      alert("Logout Successful.");
     } catch (error) {
       console.error("Error during logout:", error);
     } finally {
-      alert("Logout Successful.");
+      // Clear all state
       setIsLoggedIn(false);
-      setIsAdmin(false);
+      setUserRole(null);
+      setPatronInfo(null);
+      setActiveOrderId(null);
       window.location.href = "/";
     }
   };
+
+  
 
   const handleSearch = async (searchTerm) => {
     console.log("Search initiated for:", searchTerm);
@@ -195,7 +261,7 @@ function App() {
     <>
       <Navbar
         isLoggedIn={isLoggedIn}
-        isAdmin={isAdmin}
+        userRole={userRole}
         onLogout={handleLogout}
         onSearch={handleSearch}
       />

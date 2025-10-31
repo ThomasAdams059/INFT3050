@@ -26,72 +26,59 @@ const generateSalt = () => {
 /* Axios database calls */
 // Login user
 const tryLoginUser = (username, password, setResult) => {
-
-  console.log("=== USERHELPERS: tryLoginUser ===");
-  console.log("Username:", username);
-
   const headers = {
     'Accept': 'application/json',
-    'Content-Type': 'application/json'
   };
   
   // POST credentials to login
-  axios.post(API_PREFIX_SHORT + "/login", { username: username, password: password, type: 'user' }, {
+  axios.post(API_PREFIX_SHORT + "/login", { username: username, password: password }, {
     headers: headers, 
-    withCredentials: true
+    withCredentials: true //important 
   })
   .then((response) => { 
     console.log("=== USERHELPER DEBUG ===");
-    console.log("1. Full axios response:", response);
-    console.log("2. response.data:", response.data);
-    console.log("3. response.data.isAdmin:", response.data.isAdmin);
-    console.log("4. Type of response.data.isAdmin:", typeof response.data.isAdmin);
+    console.log("Full axios response:", response);
+    console.log("response.data:", response.data);
+    console.log("response.data.isAdmin:", response.data.isAdmin);
+    console.log("Type of response.data.isAdmin:", typeof response.data.isAdmin);
 
     // Check for isAdmin in different possible formats
     const isAdmin = response.data.isAdmin === true || 
                     response.data.isAdmin === 'true' ||
                     response.data.isAdmin === 1;
 
-    const isEmployee = response.data.isEmployee === true ||
-                       response.data.role === 'employee';                
-
-    console.log("Extracted isAdmin:", isAdmin);
-    console.log("Extracted isEmployee:", isEmployee);
+    console.log("extracted isAdmin value:", isAdmin);
 
     const resultObject = { 
       status: "Success!", 
-      isAdmin: isAdmin, 
-      isEmployee: isEmployee,
+      isAdmin: isAdmin,
+      isPatron: false, // users are NEVER patrons
       user: response.data
     };
 
     console.log("Result object being sent:", resultObject);
-
     setResult(resultObject);
+
   }).catch((error) => {
     console.log("=== LOGIN ERROR ===");
     console.log(error);
     setResult({ 
-      status: "Error :(", 
+      status: "Error", 
       isAdmin: false, 
-      isEmployee: false,
       error: error.response?.data?.message || "Login failed"
     });
   });
 };
 
-
+// add new login to create login session ? testing check later
 // Login Patron or Customer
 const tryLoginPatron = (email, password, setResult) => {
-  
-  console.log("=== USERHELPERS: tryLoginPatron ===");
-  console.log("Email:", email);
-
   const headers = {
     'Accept': 'application/json',
-    'Content-Type': 'application/json'
   };
 
+  console.log("=== PATRON LOGIN ATTEMPT ===");
+  console.log("Email:", email);
 
  axios.get(API_PREFIX_LONG + "/Patrons", {
     headers: headers,
@@ -110,10 +97,8 @@ const tryLoginPatron = (email, password, setResult) => {
     }
 
     const patrons = response.data.list;
-    
     // find the patron with matching email case sensitive
-    const patron = patrons.find(p => 
-      p.Email.toLowerCase() === email.toLowerCase()
+    const patron = patrons.find(p => p.Email.toLowerCase() === email.toLowerCase()
     );
 
     if (!patron) {
@@ -128,58 +113,29 @@ const tryLoginPatron = (email, password, setResult) => {
 
     console.log("Found patron:", patron);
 
-    // hash the provided password with the patron's salt
+    // hash the provided password with the patron's salt to check they are similar 
     sha256(patron.Salt + password).then((hashedPassword) => {
       console.log("Computed hash:", hashedPassword);
       console.log("Stored hash:", patron.HashPW);
 
-      // compare hashed password with stored hash to ensure proper login
+           // compare hashed password with stored hash to ensure proper login
       if (hashedPassword === patron.HashPW) {
         console.log("Password match! Login successful");
         
-
-      // calls backend /login endpoint to create session
-        axios.post(
-          API_PREFIX_SHORT + "/login",
-          {
-            email: email,
-            password: password,
-            type: 'patron', // Help backend identify this as patron login
-            patronId: patron.UserID // Include patron ID
-          },
-          {
-            headers: headers,
-            withCredentials: true // CRITICAL for session management dont get rid
+        const resultObject = {
+          status: "Success!",
+          isAdmin: false, // Patrons are NEVER admins
+          isPatron: true,
+          user: {
+            UserID: patron.UserID,
+            Email: patron.Email,
+            Name: patron.Name
           }
-        )
-        .then((loginResponse) => {
-          console.log("patron session created on backend");
-          
-          const resultObject = {
-            status: "Success!",
-            isAdmin: false,
-            isEmployee: false,
-            isPatron: true,
-            user: {
-              UserID: patron.UserID,
-              Email: patron.Email,
-              Name: patron.Name
-            }
-          };
+        };
 
-          setResult(resultObject);
-        })
-        .catch((loginError) => {
-          console.error("error creating patron session:", loginError);
-          setResult({
-            status: "Error :(",
-            isAdmin: false,
-            error: "Failed to create login session"
-          });
-        });
-
+        setResult(resultObject);
       } else {
-        console.log("password mismatch");
+        console.log("Password mismatch!");
         setResult({
           status: "Error :(",
           isAdmin: false,
@@ -196,8 +152,8 @@ const tryLoginPatron = (email, password, setResult) => {
     });
 
   }).catch((error) => {
-    console.log("=== USERHELPERS: Patron Fetch Error ===");
-    console.error(error);
+    console.log("=== PATRON LOGIN ERROR ===");
+    console.log(error);
     setResult({
       status: "Error :(",
       isAdmin: false,
@@ -218,7 +174,7 @@ const tryAddNewUser = async (fullName, email, password, address, postcode, state
   const hashedPW = await sha256(salt + password);
   
   const newCredentials = {
-    UserName: fullName, // Use FullName for UserName for simplicity (based on login changes)
+    UserName: fullName, // used FullName for UserName for simplicity based on login changes
     Email: email,
     Address: address,
     PostCode: postcode,

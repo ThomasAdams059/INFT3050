@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 // --- 1. ACCEPT 'isAdmin' and 'onLogout' PROPS ---
-export default function Navbar({ isLoggedIn, isAdmin, onLogout, onSearch }) {
+export default function Navbar({ isLoggedIn, isAdmin, isPatron, onLogout, onSearch }) {
     
   // State to hold the current value of the search input
     const [searchTerm, setSearchTerm] = useState("");
@@ -28,11 +28,9 @@ export default function Navbar({ isLoggedIn, isAdmin, onLogout, onSearch }) {
         }
     };
 
-    const accountHref = isLoggedIn 
-      ? (isAdmin ? "/adminAccount" : "/myAccount") 
-      : "/login";
-
-    return (
+      const accountHref = isLoggedIn ? (isPatron ? "/accountSettings" : (isAdmin ? "/adminAccount" : "/employeePage")) : "/login";
+    
+      return (
       <nav className="nav">
         <a href="/" className="site-title">The Entertainment Guild</a>
         <div className="search-container">

@@ -121,7 +121,7 @@ function App() {
   if (isPatron) {
     localStorage.setItem('userType', 'patron');
     console.log("Stored user type: patron");
-    window.location.href = '/accountSettings';
+    window.location.href = '/myAccount';
   } else if (isAdmin) {
     localStorage.setItem('userType', 'admin');
     console.log("Stored user type: admin");

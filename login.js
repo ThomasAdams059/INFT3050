@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { tryLoginUser } from './helpers/userHelpers';
+import { tryLoginUser, tryLoginPatron } from './helpers/userHelpers';
+
+
 
 const Login = ({ onLogin }) => {
   //const [action, setAction] = useState("Login");
@@ -29,23 +31,42 @@ const Login = ({ onLogin }) => {
         console.log("typeof result.isAdmin:", typeof result.isAdmin);
 
         if (result && result.status === "Success!") {
-          // If not the hardcoded admin, check the isAdmin status returned from the API
-          const isAdmin = result.isAdmin === true; 
+        const isAdmin = result.isAdmin === true;
+        const isPatron = result.isPatron === true;
+
+
+          //const isPatron = result.isPatron === true
 
           //another error log
           console.log("isAdmin value being passed:", isAdmin);
-          onLogin(isAdmin);
+          console.log("isPatron value being passed:", isPatron);
+          
+          
+          onLogin(isAdmin, isPatron);
         } else {
           alert("Login failed. Please check your credentials.");
         }
       };
-      // For all other users, proceed with the normal API login check
-      tryLoginUser(username, password, resultHandler);
+
+      const isEmail = username.includes('@');
+      
+      console.log(" Username entered:", username);
+      console.log(" Contains @?:", isEmail);
+      
+      if (isEmail) {
+        // use Patron login
+        console.log("Attempting PATRON login");
+        tryLoginPatron(username, password, resultHandler);
+      } else {
+        
+        console.log("Attempting USER login");
+        tryLoginUser(username, password, resultHandler);
+      } 
+      
     } else {
-      alert("Please enter both username and password.");
+      alert("Please enter both username/email and password.");
     }
   };
-
   const renderLoginForm = () => (
     <div className='account-container'>
       <div className="account-header">

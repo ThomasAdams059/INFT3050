@@ -14,9 +14,10 @@ export default function Genre() {
         const stocktakeUrl = `${baseUrl}/Stocktake`;
 
         // Use Promise.all to fetch data from both endpoints in parallel
+        // --- FIXED: Added { withCredentials: true } to both requests ---
         const [genreResponse, stocktakeResponse] = await Promise.all([
-          axios.get(genreUrl),
-          axios.get(stocktakeUrl)
+          axios.get(genreUrl, { withCredentials: true }),
+          axios.get(stocktakeUrl, { withCredentials: true })
         ]);
 
         const genresList = genreResponse.data.list;
@@ -25,8 +26,10 @@ export default function Genre() {
         // Create a price lookup map for quick access
         const priceMap = {};
         stocktakeList.forEach(item => {
-          if(item.SourceId === 1) // Ensure we only consider items from SourceId 1 (Hard Copy Books)
+          // Find *a* price (preferring SourceId 1)
+          if (item.Price && (!priceMap[item.ProductId] || item.SourceId === 1)) {
             priceMap[item.ProductId] = item.Price;
+          }
         });
 
         // Restructure the genre data and add prices from the lookup map
@@ -38,7 +41,6 @@ export default function Genre() {
             return {
               id: product.ID,
               name: product.Name,
-              // Placeholder values for image
               image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Product',
               price: price
             };
@@ -73,8 +75,10 @@ export default function Genre() {
             <header className="section-header">
               <h2 className="section-heading">{genre.name}</h2>
             </header>
-            <main className="horizontal-scroll-container">
-              {genre.products.slice(0, 7).map(product => (
+            {/* --- FIXED: Changed class to 'product-grid' --- */}
+            <main className="product-grid">
+              {/* --- FIXED: Removed .slice(0, 7) --- */}
+              {genre.products.map(product => (
                 <ProductCard
                   key={product.id}
                   imageSrc={product.image}

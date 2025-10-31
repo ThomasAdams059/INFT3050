@@ -21,6 +21,12 @@ const UserManagement = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  // --- NEW: Navigation handler ---
+  const handleBackToDashboard = () => {
+    window.location.href = '/adminAccount';
+  };
+  // --- END NEW ---
+
   async function sha256(message) {
     const msgBuffer = new TextEncoder().encode(message);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -36,61 +42,48 @@ const UserManagement = () => {
 
   const handleAddUser = (event) => {
     event.preventDefault();
+    if (!userName || !fullName || !email || !password || !address || !postCode || !state) {
+      setErrorMessage("Please fill in all fields.");
+      return;
+    }
+
     setIsLoading(true);
     setErrorMessage("");
     setSuccessMessage("");
-    const salt = generateSalt();
 
-    sha256(salt + password).then((hashedPW) => {
+    generateSaltAndHash(password).then(hashInfo => {
       const newUser = {
         UserName: userName,
-        Email: email,
         Name: fullName,
-        IsAdmin: makeAdmin ? 1 : 0,
-        Salt: salt,
-        HashPW: hashedPW,
-        Address: address,
+        Email: email,
+        StreetAddress: address,
         PostCode: postCode,
-        State: state
+        State: state,
+        IsAdmin: makeAdmin,
+        Salt: hashInfo.salt,
+        HashPW: hashInfo.hash
       };
 
-      axios.post(
-        `${baseUrl}/User`,
-        newUser,
-        {
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          withCredentials: true
-        }
-      )
-      .then((response) => {
-        console.log("User added successfully:", response.data);
-        setSuccessMessage(`User "${userName}" created successfully!`);
-        setUserName("");
-        setFullName("");
-        setEmail("");
-        setPassword("");
-        setAddress("");
-        setPostCode("");
-        setState("NSW");
-        setMakeAdmin(false);
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error adding user:", error);
-        const errorMsg = error.response?.data?.message ||
-                         error.response?.data?.error ||
-                         "Failed to create user. Please try again.";
-        setErrorMessage(errorMsg);
-        setIsLoading(false);
-      });
-    })
-    .catch((error) => {
-      console.error("Error hashing password:", error);
-      setErrorMessage("Failed to process password. Please try again.");
-      setIsLoading(false);
+      axios.post(`${baseUrl}/User`, newUser, { withCredentials: true })
+        .then(response => {
+          setSuccessMessage(`User "${userName}" created successfully!`);
+          // Clear form
+          setUserName("");
+          setFullName("");
+          setEmail("");
+          setPassword("");
+          setAddress("");
+          setPostCode("");
+          setState("NSW");
+          setMakeAdmin(false);
+        })
+        .catch(error => {
+          console.error("Error adding user:", error.response || error);
+          setErrorMessage(error.response?.data?.message || "Failed to create user.");
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     });
   };
 
@@ -101,154 +94,121 @@ const UserManagement = () => {
     setSuccessMessage("");
     setShowUserInfo(false);
     setFoundUser(null);
-    console.log("Searching for user:", searchUser);
-    console.log("Making GET request to:", `${baseUrl}/User`);
 
-    axios.get(
-      `${baseUrl}/User`,
-      {
-        headers: { 'Accept': 'application/json' },
-        withCredentials: true
-      }
-    )
-    .then((response) => {
-      console.log("Response received:", response);
-      console.log("Response data:", response.data);
-      if (!response.data || !response.data.list) {
-        console.error("Unexpected response structure:", response.data);
-        setErrorMessage("Unexpected data format from server");
+    // Fetch all users and filter by username
+    axios.get(`${baseUrl}/User`, { withCredentials: true })
+      .then(response => {
+        const users = response.data.list || [];
+        const user = users.find(u => u.UserName.toLowerCase() === searchUser.toLowerCase());
+
+        if (user) {
+          setFoundUser(user);
+          setShowUserInfo(true);
+          setSuccessMessage(`Found user: ${user.UserName}`);
+        } else {
+          setErrorMessage(`User "${searchUser}" not found.`);
+        }
+      })
+      .catch(error => {
+        console.error("Error searching user:", error.response || error);
+        setErrorMessage(error.response?.data?.message || "Failed to search for user.");
+      })
+      .finally(() => {
         setIsLoading(false);
-        return;
-      }
-      const users = response.data.list;
-      console.log("Total users found:", users.length);
-      console.log("Users array:", users);
-      const user = users.find(u =>
-        u.UserName && u.UserName.toLowerCase() === searchUser.toLowerCase()
-      );
-      if (user) {
-        console.log("User found:", user);
-        setFoundUser(user);
-        setShowUserInfo(true);
-        setSuccessMessage(`Found user: ${user.UserName}`);
-      } else {
-        setErrorMessage(`User "${searchUser}" not found`);
-        setFoundUser(null);
-        setShowUserInfo(false);
-      }
-      setIsLoading(false);
-    })
-    .catch((error) => {
-      console.error("Error searching user:", error);
-        let errorMsg = "Failed to search for user. ";
-        if (error.response) {
-            const status = error.response.status;
-            if (status === 401 || status === 403) errorMsg += "Authentication required.";
-            else if (status === 404) errorMsg += "User endpoint not found.";
-            else if (status === 500) errorMsg += "Server error.";
-            else errorMsg += `Server error (${status}). ${error.response.data?.message || ''}`;
-        } else if (error.request) errorMsg += "No response from server.";
-        else errorMsg += error.message;
-        setErrorMessage(errorMsg);
-        setIsLoading(false);
-    });
+      });
   };
 
   const handleEditUser = () => {
     if (!foundUser) return;
-    const newName = prompt("Enter new full name:", foundUser.Name);
-    const newEmail = prompt("Enter new email:", foundUser.Email);
-    const changeAdmin = window.confirm(`Is ${foundUser.UserName} an admin? (Currently: ${foundUser.IsAdmin ? 'Yes' : 'No'}). Click OK for Yes, Cancel for No.`);
-    const newIsAdmin = changeAdmin ? 1 : 0;
+
+    // Use prompts to get new info
+    const newName = prompt("Enter new Full Name:", foundUser.Name);
+    const newEmail = prompt("Enter new Email:", foundUser.Email);
+    const newIsAdmin = window.confirm(`Make this user an Admin? (Currently: ${foundUser.IsAdmin ? 'Yes' : 'No'})`);
 
     if (newName === null || newEmail === null) {
-        alert("Edit cancelled.");
-        return;
+      return; // User cancelled
     }
-     if (!newName || !newEmail) {
-       alert("Name and Email fields cannot be empty.");
-       return;
-     }
 
     setIsLoading(true);
     setErrorMessage("");
     setSuccessMessage("");
 
-    const updatedFields = {
+    const payload = {
       Name: newName,
       Email: newEmail,
       IsAdmin: newIsAdmin
     };
 
-    axios.patch(
-      `${baseUrl}/User/${foundUser.UserID}`,
-      updatedFields,
-      {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        withCredentials: true
-      }
-    )
-    .then((response) => {
-       console.log("User updated successfully:", response.data);
-       setSuccessMessage(`User "${foundUser.UserName}" updated successfully!`);
-       setFoundUser({
-         ...foundUser,
-         Name: newName,
-         Email: newEmail,
-         IsAdmin: newIsAdmin === 1
-       });
-       setIsLoading(false);
-    })
-    .catch((error) => {
-       console.error("Error updating user:", error);
-       const errorMsg = error.response?.data?.message || "Failed to update user. Please try again.";
-       setErrorMessage(errorMsg);
-       setIsLoading(false);
-    });
+    axios.patch(`${baseUrl}/User/${foundUser.UserID}`, payload, { withCredentials: true })
+      .then(response => {
+        setSuccessMessage("User updated successfully!");
+        // Update local state
+        setFoundUser(prev => ({ ...prev, ...payload }));
+      })
+      .catch(error => {
+        console.error("Error updating user:", error.response || error);
+        setErrorMessage(error.response?.data?.message || "Failed to update user.");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const handleDeleteUser = () => {
     if (!foundUser) return;
-    const confirmDelete = window.confirm(`Are you sure you want to delete user "${foundUser.UserName}"? This action cannot be undone.`);
-    if (!confirmDelete) return;
+    if (!window.confirm(`Are you sure you want to delete user "${foundUser.UserName}"? This cannot be undone.`)) {
+      return;
+    }
+
     setIsLoading(true);
     setErrorMessage("");
     setSuccessMessage("");
-    console.log("Deleting user with ID:", foundUser.UserID);
 
-    axios.delete(
-      `${baseUrl}/User/${foundUser.UserID}`,
-      {
-        headers: { 'Accept': 'application/json' },
-        withCredentials: true
-      }
-    )
-    .then((response) => {
-      console.log("User deleted successfully");
-      setSuccessMessage(`User "${foundUser.UserName}" deleted successfully.`);
-      setShowUserInfo(false);
-      setFoundUser(null);
-      setSearchUser("");
-      setIsLoading(false);
-    })
-    .catch((error) => {
-      console.error("Error deleting user:", error);
-      const errorMsg = error.response?.data?.message || "Failed to delete user. Please try again.";
-      setErrorMessage(errorMsg);
-      setIsLoading(false);
-    });
+    axios.delete(`${baseUrl}/User/${foundUser.UserID}`, { withCredentials: true })
+      .then(response => {
+        setSuccessMessage(`User "${foundUser.UserName}" deleted successfully.`);
+        // Clear form
+        setFoundUser(null);
+        setShowUserInfo(false);
+        setSearchUser("");
+      })
+      .catch(error => {
+        console.error("Error deleting user:", error.response || error);
+        setErrorMessage(error.response?.data?.message || "Failed to delete user. They may be linked to other records.");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+
+  // Helper to combine salt and hash generation
+  const generateSaltAndHash = async (password) => {
+    const salt = generateSalt();
+    const hash = await sha256(salt + password);
+    return { salt, hash };
   };
 
   return (
     <div className="management-container">
+      {/* --- NEW BUTTON --- */}
+      <button 
+        onClick={handleBackToDashboard} 
+        className="admin-manage-button" // Use a consistent class
+        style={{ marginBottom: '20px', width: 'auto', backgroundColor: '#6c757d', color: 'white' }} 
+      >
+        &larr; Back to Admin Dashboard
+      </button>
+      {/* --- END NEW BUTTON --- */}
+
       <h1>User Management</h1>
+      
+      {/* Display Messages */}
       {errorMessage && <div className="error-message">{errorMessage}</div>}
       {successMessage && <div className="success-message">{successMessage}</div>}
-      {isLoading && <div className="loading-message">Loading...</div>}
+      
       <div className="management-grid">
+        {/* --- ADD USER FORM --- */}
         <div className="management-section">
           <h2>Add User</h2>
           <form onSubmit={handleAddUser}>
@@ -258,11 +218,11 @@ const UserManagement = () => {
             </div>
             <div className="form-group">
               <label>Full Name<span className="required">*</span></label>
-              <input type="text" placeholder="First and Last" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              <input type="text" placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
             </div>
             <div className="form-group">
               <label>Email<span className="required">*</span></label>
-              <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div className="form-group">
               <label>Password<span className="required">*</span></label>
@@ -270,39 +230,38 @@ const UserManagement = () => {
             </div>
             <div className="form-group">
               <label>Address<span className="required">*</span></label>
-              <input type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} required />
+              <input type="text" placeholder="Street Address" value={address} onChange={(e) => setAddress(e.target.value)} required />
             </div>
             <div className="form-row">
               <div className="form-group">
-                <input type="text" placeholder="Post Code" value={postCode} onChange={(e) => setPostCode(e.target.value)} />
+                <label>Post Code<span className="required">*</span></label>
+                <input type="text" placeholder="Post Code" value={postCode} onChange={(e) => setPostCode(e.target.value)} required />
               </div>
               <div className="form-group">
-                <select value={state} onChange={(e) => setState(e.target.value)}>
+                <label>State<span className="required">*</span></label>
+                <select value={state} onChange={(e) => setState(e.target.value)} required>
                   <option value="NSW">NSW</option>
                   <option value="VIC">VIC</option>
                   <option value="QLD">QLD</option>
-                  <option value="SA">SA</option>
                   <option value="WA">WA</option>
+                  <option value="SA">SA</option>
                   <option value="TAS">TAS</option>
-                  <option value="NT">NT</option>
                   <option value="ACT">ACT</option>
+                  <option value="NT">NT</option>
                 </select>
               </div>
             </div>
-            <div className="form-group checkbox-group">
-                <input
-                    type="checkbox"
-                    id="isAdminCheckbox"
-                    checked={makeAdmin}
-                    onChange={(e) => setMakeAdmin(e.target.checked)}
-                />
-                <label htmlFor="isAdminCheckbox">Make Admin?</label>
+            <div className="form-group-checkbox">
+              <input type="checkbox" id="makeAdmin" checked={makeAdmin} onChange={(e) => setMakeAdmin(e.target.checked)} />
+              <label htmlFor="makeAdmin">Make this user an Admin?</label>
             </div>
             <button type="submit" className="btn-add" disabled={isLoading}>
               {isLoading ? "Adding..." : "Add User"}
             </button>
           </form>
         </div>
+        
+        {/* --- EDIT/DELETE USER FORM --- */}
         <div className="management-section">
           <h2>Edit/Delete User</h2>
           <form onSubmit={handleSearchUser} className="search-box">

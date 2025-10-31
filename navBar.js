@@ -28,7 +28,7 @@ export default function Navbar({ isLoggedIn, isAdmin, isPatron, onLogout, onSear
         }
     };
 
-      const accountHref = isLoggedIn ? (isPatron ? "/accountSettings" : (isAdmin ? "/adminAccount" : "/employeePage")) : "/login";
+      const accountHref = isLoggedIn ? (isPatron ? "/myAccount" : (isAdmin ? "/adminAccount" : "/employeePage")) : "/login";
     
       return (
       <nav className="nav">

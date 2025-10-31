@@ -11,7 +11,6 @@ const SearchResults = () => {
 
     useEffect(() => {
         setLoading(true);
-        // Read the query parameter from the URL
         const urlParams = new URLSearchParams(window.location.search);
         const query = urlParams.get('query') || "";
         
@@ -23,54 +22,67 @@ const SearchResults = () => {
         }
         
         const fetchSearchResults = async () => {
-            // 1. Convert query to lowercase AND remove all spaces
             const normalizedQuery = query.toLowerCase().replace(/\s/g, '');
 
             try {
-                // 2. Fetch all products and stocktake data
-                const [productResponse, stocktakeResponse] = await Promise.all([
-                  axios.get(`${API_BASE_URL}/Product`),
-                  axios.get(`${API_BASE_URL}/Stocktake`)
+                // --- UPDATED: Fetch Product, Stocktake, AND Genre ---
+                const [productResponse, stocktakeResponse, genreResponse] = await Promise.all([
+                  axios.get(`${API_BASE_URL}/Product`, { withCredentials: true }),
+                  axios.get(`${API_BASE_URL}/Stocktake`, { withCredentials: true }),
+                  axios.get(`${API_BASE_URL}/Genre`, { withCredentials: true }) // <-- NEW
                 ]);
                 
                 const allProducts = productResponse.data.list || [];
                 const stocktakeList = stocktakeResponse.data.list || [];
-                
-                // 3. Perform the space-insensitive filtering logic
-                const matches = allProducts.filter(product => {
-                    if (!product.Name && !product.Author) return false;
-                    
-                    // Convert product fields to lowercase AND remove all spaces for comparison
-                    const name = product.Name?.toLowerCase().replace(/\s/g, '') || "";
-                    const author = product.Author?.toLowerCase().replace(/\s/g, '') || "";
-                    
-                    return name.includes(normalizedQuery) || author.includes(normalizedQuery);
-                });
-                
-                // Get prices from Stocktake data
+                const allGenres = genreResponse.data.list || []; // <-- NEW
+
+                // --- NEW: Create a Price Map (like in genre.js) ---
                 const priceMap = {};
                 stocktakeList.forEach(item => {
-                    if(item.SourceId === 1) // Hard Copy Books
-                        priceMap[item.ProductId] = item.Price;
+                  if (item.Price && (!priceMap[item.ProductId] || item.SourceId === 1)) {
+                    priceMap[item.ProductId] = item.Price;
+                  }
                 });
 
-                // Map results to include price
-                const formattedProducts = matches.map(product => ({
-                    ...product,
-                    price: priceMap[product.ID] ? `$${priceMap[product.ID].toFixed(2)}` : 'Price N/A'
+                // --- NEW: Create a Genre Map ---
+                const genreMap = {};
+                allGenres.forEach(genre => {
+                  genreMap[genre.GenreID] = genre.Name.toLowerCase().replace(/\s/g, '');
+                });
+                
+                // --- UPDATED: Filter logic to include Genre ---
+                const matches = allProducts.filter(product => {
+                    if (!product.Name && !product.Author && !product.Genre) return false;
+                    
+                    const name = (product.Name || '').toLowerCase().replace(/\s/g, '');
+                    const author = (product.Author || '').toLowerCase().replace(/\s/g, '');
+                    // Find the genre name (e.g., "movies") from the map
+                    const genreName = genreMap[product.Genre] || ''; 
+                    
+                    // Check if query is in name, author, OR genre name
+                    return name.includes(normalizedQuery) || 
+                           author.includes(normalizedQuery) ||
+                           genreName.includes(normalizedQuery);
+                });
+
+                // --- NEW: Map prices to the filtered matches ---
+                const pricedMatches = matches.map(product => ({
+                  ...product,
+                  price: priceMap[product.ID] ? `$${priceMap[product.ID].toFixed(2)}` : 'N/A'
                 }));
 
-                setProducts(formattedProducts);
+                setProducts(pricedMatches);
                 
             } catch (error) {
                 console.error("Error fetching search results:", error);
+                // Handle error (e.g., show an error message)
             } finally {
                 setLoading(false);
             }
         };
 
         fetchSearchResults();
-    }, [window.location.search]);
+    }, [window.location.search]); // Re-run search if URL query changes
 
     const handleCardClick = (productId) => {
         window.location.href = `/products?id=${productId}`;
@@ -87,7 +99,6 @@ const SearchResults = () => {
         );
     }
     
-    // Fallback for no results or no query
     if (products.length === 0) {
       return (
         <div className="main-container">
@@ -112,7 +123,7 @@ const SearchResults = () => {
               key={product.ID}
               imageSrc={"https://placehold.co/200x300/F4F4F5/18181B?text=Book"}
               productName={product.Name}
-              price={product.price}
+              price={product.price} // <-- Use the price from the map
               onClick={() => handleCardClick(product.ID)}
             />
           ))}

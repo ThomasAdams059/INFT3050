@@ -3,7 +3,7 @@ import axios from 'axios';
 import ProductCard from './productCard';
 
 // Accept props from App.js (isLoggedIn, isPatron, patronInfo)
-const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
+const ProductPage = ({ isLoggedIn, isPatron, patronInfo, onAddToCart }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [productData, setProductData] = useState(null);
@@ -127,58 +127,50 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
     }
   };
 
-  // --- "Add to Order" Handler (Updated) ---
-  const handleAddToOrderClick = async () => {
-    if (!isLoggedIn || !isPatron) {
-      alert("Please log in as a customer to place an order.");
-      window.location.href = '/login';
-      return;
+ // --- "Add to Cart" Handler (Updated) ---
+const handleAddToOrderClick = async () => {
+  if (!isLoggedIn || !isPatron) {
+    alert("Please log in as a customer to add items to your cart.");
+    window.location.href = '/login';
+    return;
+  }
+  if (!selectedStockItemId) {
+    alert("Please select a product version (e.g., Hard Copy, Digital) before adding to cart.");
+    return;
+  }
+  if (isSubmittingOrder) return;
+  setIsSubmittingOrder(true); // We can still use this state to prevent double-clicks
+
+  try {
+    // Find the full source details
+    const selectedSource = availableSources.find(s => s.itemId === selectedStockItemId);
+    if (!selectedSource) {
+        throw new Error("Selected source not found.");
     }
-    if (!productData || !patronInfo || !patronInfo.customerId) {
-      alert("Cannot create order. User or product information is missing. Please refresh.");
-      return;
-    }
-    // --- UPDATED: Check if a source is selected ---
-    if (!selectedStockItemId) {
-      alert("Please select a product version (e.g., Hard Copy, Digital) before ordering.");
-      return;
-    }
-    if (isSubmittingOrder) return;
-    setIsSubmittingOrder(true);
 
-    try {
-      const customerDetailsResponse = await axios.get(
-        `http://localhost:3001/api/inft3050/Customers/${patronInfo.customerId}`,
-        { withCredentials: true }
-      );
-      const customerDetails = customerDetailsResponse.data;
+    // 1. Create the item object to add to the cart
+    const itemToAdd = {
+      id: productData.ID,
+      name: productData.Name,
+      price: selectedSource.price,
+      stockItemId: selectedStockItemId, // This is the unique key for the cart
+      sourceName: selectedSource.sourceName,
+      image: "https://placehold.co/200x300/F4F4F5/18181B?text=Book" // Use placeholder
+    };
 
-      const orderBody = {
-        Customer: patronInfo.customerId,
-        StreetAddress: customerDetails.StreetAddress || 'N/A',
-        PostCode: customerDetails.PostCode || 0,
-        Suburb: customerDetails.Suburb || 'N/A',
-        State: customerDetails.State || 'N/A',
-        OrderDate: new Date().toISOString()
-        // Note: As per constraints, this POST /Orders request does not link
-        // the selected item (selectedStockItemId).
-      };
+    // 2. Call the onAddToCart function passed from App.js
+    onAddToCart(itemToAdd);
 
-      const response = await axios.post(
-        `http://localhost:3001/api/inft3050/Orders`,
-        orderBody,
-        { withCredentials: true }
-      );
+    // 3. Give user feedback
+    alert(`${productData.Name} (${selectedSource.sourceName}) has been added to your cart!`);
 
-      alert(`${productData.Name} has been added to order ${response.data.OrderID}!`);
-
-    } catch (error) {
-      console.error("Error creating order:", error.response || error);
-      alert(`Failed to create order. ${error.response?.data?.message || 'Please try again.'}`);
-    } finally {
-      setIsSubmittingOrder(false);
-    }
-  };
+  } catch (error) {
+    console.error("Error adding to cart:", error);
+    alert(`Failed to add item to cart. ${error.message || 'Please try again.'}`);
+  } finally {
+    setIsSubmittingOrder(false);
+  }
+};
   
   // Other handlers
   const handleStarClick = (index) => setRating(index);
@@ -279,12 +271,12 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
             {/* Updated Button */}
             {isLoggedIn && isPatron ? (
               <button
-                className="add-to-cart-button"
-                onClick={handleAddToOrderClick}
-                disabled={isSubmittingOrder || !selectedStockItemId || (availableSources.find(s => s.itemId === selectedStockItemId)?.quantity === 0)}
-              >
-                {isSubmittingOrder ? 'Adding...' : 'Add to Order'}
-              </button>
+                  className="add-to-cart-button"
+                  onClick={handleAddToOrderClick} // We will rewrite this function
+                  disabled={isSubmittingOrder || !selectedStockItemId || (availableSources.find(s => s.itemId === selectedStockItemId)?.quantity === 0)}
+                >
+                  {isSubmittingOrder ? 'Adding...' : 'Add to Cart'} {/* <-- CHANGE TEXT HERE */}
+                </button>
             ) : (
                  <button
                    className="add-to-cart-button"
@@ -335,4 +327,3 @@ const ProductPage = ({ isLoggedIn, isPatron, patronInfo }) => {
 };
 
 export default ProductPage;
-

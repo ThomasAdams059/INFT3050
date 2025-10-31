@@ -9,15 +9,12 @@ const CreateAccount = ({ onCreateAccount }) => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  /*const [address, setAddress] = useState("");
-  const [postcode, setPostcode] = useState("");
-  const [state, setState] = useState("");*/
+
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  // same function used in userHelper.js to convert plain text password to secure hash
   async function sha256(message) {
     
     const msgBuffer = new TextEncoder().encode(message);
@@ -99,14 +96,11 @@ const CreateAccount = ({ onCreateAccount }) => {
         setIsLoading(false);
 
         setTimeout(() => {
-          if (onCreateAccount) {
-            onCreateAccount();
-          } else {
-            window.location.href = "/login";
-          }
+
+          window.location.href = "/login";
+
         }, 2000);
       })
-
       .catch((error) => {
         // if something goes wrong
         console.error("Error creating account:", error);

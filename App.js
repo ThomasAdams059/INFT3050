@@ -29,36 +29,92 @@ import SearchResults from './searchResults';
 
 const API_BASE_URL = "http://localhost:3001/api/inft3050";
 
+// --- Helper function to get cart from localStorage ---
+const getCartFromStorage = () => {
+  const cart = localStorage.getItem('entertainmentGuildCart');
+  return cart ? JSON.parse(cart) : [];
+};
+// --- END NEW ---
+
 function App() {
-  const [cartItems, setCartItems] = useState([]);
+  // --- Initialize cart state from localStorage ---
+  const [cartItems, setCartItems] = useState(getCartFromStorage());
+  
+  // --- All User/Auth State ---
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isPatron, setIsPatron] = useState(false);
+  const [patronInfo, setPatronInfo] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  
   const [lastSearchTerm, setLastSearchTerm] = useState("");
 
+  // --- Effect for Cart Persistence (Saves cart to storage) ---
+  useEffect(() => {
+    localStorage.setItem('entertainmentGuildCart', JSON.stringify(cartItems));
+  }, [cartItems]);
+  
+  // --- Effect for Login Persistence (Checks login status on page load) ---
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
-        // Hardcoded backend auth URL
         const response = await axios.get("http://localhost:3001/me", { withCredentials: true });
+        
         setIsLoggedIn(true);
-        if (response.data && response.data.isAdmin === true) {
+        setCurrentUser(response.data); // Store full user object
+
+        // Correctly set all roles and info based on user data
+        if (response.data && response.data.IsAdmin === true) {
           setIsAdmin(true);
+          setIsPatron(false);
+        } else if (response.data && response.data.hasOwnProperty('UserName')) {
+          // It's an Employee (has UserName but not Admin)
+          setIsAdmin(false);
+          setIsPatron(false);
+        } else if (response.data) {
+          // It's a Patron
+          setIsAdmin(false);
+          setIsPatron(true);
+          setPatronInfo({ customerId: response.data.UserID });
         }
       } catch (error) {
+        // No valid session
         setIsLoggedIn(false);
         setIsAdmin(false);
+        setIsPatron(false);
+        setCurrentUser(null);
+        setPatronInfo(null);
       }
     };
 
     checkLoginStatus();
-  }, []);
+  }, []); // Runs once on initial app load
 
-  const handleAddToCart = (item) => {
-    setCartItems(prevItems => [...prevItems, item]);
-    alert(`${item.name} has been added to your cart!`);
-    console.log("Current cart:", [...cartItems, item]);
+  // --- This function is called by Cart.js AFTER a successful order ---
+  const handleOrderSuccess = () => {
+    console.log("App.js: Order successful, clearing cart.");
+    setCartItems([]); // Clear state
+    localStorage.removeItem('entertainmentGuildCart'); // Clear storage
   };
 
+  // --- Cart Add Handler ---
+  const handleAddToCart = (itemToAdd) => {
+    setCartItems(prevItems => {
+      const existingItem = prevItems.find(item => item.stockItemId === itemToAdd.stockItemId);
+
+      if (existingItem) {
+        return prevItems.map(item =>
+          item.stockItemId === itemToAdd.stockItemId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        return [...prevItems, { ...itemToAdd, quantity: 1 }];
+      }
+    });
+  };
+
+  // --- FIXED: handleLogin to correctly interpret user object and navigate ---
   const handleLogin = (isAdmin = false) => {
     setIsLoggedIn(true);
     setIsAdmin(isAdmin);
@@ -66,31 +122,37 @@ function App() {
     window.location.href = isAdmin ? '/adminAccount' : '/employeePage';
   };
 
+  // --- FIXED: handleLogout to clear all user state ---
   const handleLogout = async () => {
     try {
-      // Hardcoded backend auth URL
       await axios.post("http://localhost:3001/logout", {}, { withCredentials: true });
     } catch (error) {
       console.error("Error during logout:", error);
     } finally {
       alert("Logout Successful.");
+      // Clear all auth state
       setIsLoggedIn(false);
       setIsAdmin(false);
+      setIsPatron(false);
+      setPatronInfo(null);
+      setCurrentUser(null);
+      // Clear cart
+      setCartItems([]);
+      localStorage.removeItem('entertainmentGuildCart');
+      
       window.location.href = "/";
     }
   };
 
+  // --- Search Handler ---
   const handleSearch = async (searchTerm) => {
     console.log("Search initiated for:", searchTerm);
     
-    // Store the last search term for simple redirection, although SearchResults uses URL query
     setLastSearchTerm(searchTerm); 
 
-    // 1. Convert search term to lowercase for filtering
     const normalizedSearchTerm = searchTerm.toLowerCase().replace(/\s/g, '');
 
     try {
-        // 2. Fetch all products from the /Product endpoint
         const response = await axios.get(`${API_BASE_URL}/Product`,
         {
           headers: {
@@ -103,25 +165,20 @@ function App() {
 
         if (!products || products.length === 0) {
             alert(`Search failed: No products found on the server.`);
-            // Navigate with query parameter for consistency
             window.location.href = "/searchresults?query=" + encodeURIComponent(searchTerm); 
             return;
         }
 
-        // 3. Filter for matches (partial or exact) on Name or Author
         const matches = products.filter(product => {
             if (!product.Name && !product.Author) return false;
             
             const name = product.Name?.toLowerCase().replace(/\s/g, '');
             const author = product.Author?.toLowerCase().replace(/\s/g, '');
             
-            // Check for partial match anywhere in Name or Author
             return name.includes(normalizedSearchTerm) || author.includes(normalizedSearchTerm);
         });
 
-        // 4. Handle the result and navigate
         if (matches.length === 1) {
-            // Only one result found: go straight to the product page
             const productId = matches[0].ID;
             const path = `/products?id=${productId}`;
             
@@ -129,7 +186,6 @@ function App() {
             window.location.href = path;
             
         } else {
-            // Multiple or Zero results found: navigate to the search results page, passing the query in the URL
             console.log(`${matches.length} products found, navigating to search results.`);
             window.location.href = "/searchresults?query=" + encodeURIComponent(searchTerm);
         }
@@ -143,8 +199,15 @@ function App() {
   let component;
   const path = window.location.pathname;
 
+  // --- UPDATED Router to pass all correct props ---
+
   if (path.startsWith("/products")) {
-    component = <ProductPage onAddToCart={handleAddToCart} />;
+    component = <ProductPage 
+                  onAddToCart={handleAddToCart}
+                  isLoggedIn={isLoggedIn}
+                  isPatron={isPatron}
+                  patronInfo={patronInfo}
+                />;
   } else {
     switch (path) {
       case "/":
@@ -166,13 +229,21 @@ function App() {
         component = <Login onLogin={handleLogin} />;
         break;
       case "/createAccount":
-        component = <CreateAccount onCreateAccount={handleLogin} />;
+        component = <CreateAccount />; // Removed onCreateAccount prop
         break;
       case "/recoverAccount":
         component = <RecoverAccount />;
         break;
       case "/Cart":
-        component = <CartPage cartItems={cartItems} />;
+        component = <CartPage 
+                      cartItems={cartItems}
+                      isLoggedIn={isLoggedIn}
+                      isPatron={isPatron}
+                      patronInfo={patronInfo}
+                      isAdmin={isAdmin}
+                      onOrderSuccess={handleOrderSuccess}
+                      currentUser={currentUser} // Pass current user for address
+                    />;
         break;
       case "/adminAccount":
         component = <AdminAccount />;
@@ -187,22 +258,19 @@ function App() {
         component = <PatronManagement />;
         break;
       case "/myAccount":
-        component = <MyAccount />;
+        component = <MyAccount currentUser={currentUser} />;
         break;
       case "/orderHistory":
-        component = <OrderHistory />;
+        component = <OrderHistory currentUser={currentUser} />;
         break;
       case "/accountSettings":
-        component = <AccountSettings />;
+        component = <AccountSettings currentUser={currentUser} />;
         break;
       case "/addressBook":
-        component = <AddressBook />;
+        component = <AddressBook currentUser={currentUser} />;
         break;
       case "/paymentMethod":
-        component = <PaymentMethods />;
-        break;
-      default:
-        component = <HomePage />;
+        component = <PaymentMethods currentUser={currentUser} />;
         break;
       case "/employeePage":
         component = <EmployeePage />;
@@ -216,6 +284,9 @@ function App() {
       case "/searchresults":
             component = <SearchResults />;
             break;
+      default:
+        component = <HomePage />;
+        break;
     }
   }
   return (
@@ -235,3 +306,4 @@ function App() {
 }
 
 export default App;
+

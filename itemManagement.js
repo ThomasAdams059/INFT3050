@@ -1,19 +1,27 @@
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const ItemManagement = () => {
+// --- UPDATED: Accept currentUser prop ---
+const ItemManagement = ({ currentUser }) => {
+  
+  // --- NEW: Handle nested user object (consistent with other fixes) ---
+  const user = currentUser ? (currentUser.user || currentUser) : null;
+
   // --- State for Add Item form ---
   const [itemName, setItemName] = useState("");
   const [author, setAuthor] = useState("");
   const [description, setDescription] = useState("");
-  const [published, setPublished] = useState("");
-  const [genreId, setGenreId] = useState("");
+  const [published, setPublished] = useState(""); // Will be type="date"
+  
+  // --- NEW: State for dynamic dropdowns ---
+  const [genres, setGenres] = useState([]);
+  const [genreId, setGenreId] = useState(""); 
   const [subGenreOptions, setSubGenreOptions] = useState([]);
   const [subgenreId, setSubgenreId] = useState("");
+  
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [sourceId, setSourceId] = useState("");
+  const [sourceId, setSourceId] = useState("1"); // Default to 1 (Hard Copy Book)
 
   // --- State for Edit/Delete form ---
   const [searchItemName, setSearchItemName] = useState("");
@@ -35,349 +43,404 @@ const ItemManagement = () => {
   const productBaseUrl = `${baseUrl}/Product`;
   const stocktakeBaseUrl = `${baseUrl}/Stocktake`;
 
-  const sourceOptions = [
-    { id: 1, name: "Hard copy book" },
-    { id: 2, name: "Audible" },
-    { id: 3, name: "Kindle" },
-    { id: 4, name: "DVD" },
-    { id: 5, name: "BlueRay" },
-    { id: 6, name: "Apple" },
-    { id: 7, name: "Hard copy audiobook" },
-    { id: 8, name: "Steam" },
-    { id: 9, name: "XBox" },
-    { id: 10, name: "PlayStation" }
-  ];
+  // --- NEW: Navigation handler ---
+  const handleBackToDashboard = () => {
+    window.location.href = '/adminAccount';
+  };
+  // --- END NEW ---
 
-  // useEffect to fetch sub-genres
+  // --- NEW: Fetch Genres on component load ---
   useEffect(() => {
-    const fetchSubGenres = async () => {
+    const fetchGenres = async () => {
+      try {
+        // --- FIXED: Added withCredentials ---
+        const response = await axios.get(`${baseUrl}/Genre`, { withCredentials: true });
+        setGenres(response.data.list || []);
+      } catch (err) {
+        console.error("Error fetching genres:", err);
+        setErrorAdd("Failed to load genres. Refresh the page.");
+      }
+    };
+    fetchGenres();
+  }, []);
+
+  // --- NEW: Fetch Subgenres when Genre changes ---
+  useEffect(() => {
+    const fetchSubgenres = async () => {
       if (!genreId) {
         setSubGenreOptions([]);
         setSubgenreId("");
         return;
       }
-
-      let subGenreUrl = "";
-      if (genreId === "1") subGenreUrl = `${baseUrl}/BookGenre`;
-      else if (genreId === "2") subGenreUrl = `${baseUrl}/MovieGenre`;
-      else if (genreId === "3") subGenreUrl = `${baseUrl}/GameGenre`;
-      else {
-        setSubGenreOptions([]);
-        setSubgenreId("");
-        return;
+      
+      let subGenreEndpoint = "";
+      switch (parseInt(genreId)) {
+        case 1: // Book
+          subGenreEndpoint = `${baseUrl}/BookGenre`;
+          break;
+        case 2: // Movie
+          subGenreEndpoint = `${baseUrl}/MovieGenre`;
+          break;
+        case 3: // Game
+          subGenreEndpoint = `${baseUrl}/GameGenre`;
+          break;
+        default:
+          setSubGenreOptions([]);
+          setSubgenreId("");
+          return;
       }
 
       try {
-        const response = await axios.get(subGenreUrl, { withCredentials: true });
-        const validSubGenres = (response.data.list || []).filter(
-          option => option.Name && !option.Name.startsWith('<')
-        );
-        setSubGenreOptions(validSubGenres);
-      } catch (error) {
-        console.error("Error fetching sub-genres:", error);
-        setErrorAdd("Failed to load sub-genres.");
-        setSubGenreOptions([]);
+        // --- FIXED: Added withCredentials ---
+        const response = await axios.get(subGenreEndpoint, { withCredentials: true });
+        setSubGenreOptions(response.data.list || []);
+        setSubgenreId(""); // Reset subgenre selection
+      } catch (err) {
+        console.error("Error fetching subgenres:", err);
+        setErrorAdd("Failed to load subgenres.");
       }
-      setSubgenreId("");
     };
+    fetchSubgenres();
+  }, [genreId]); // Dependency array
 
-    fetchSubGenres();
-  }, [genreId]);
-
-  // Handle Add Item (Product + Stock)
+  // --- NEW: Handle Add Item ---
   const handleAddItem = async (event) => {
     event.preventDefault();
+    if (!user) {
+      setErrorAdd("You must be logged in to add an item.");
+      return;
+    }
+    if (!itemName || !author || !genreId || !subgenreId || !price || !quantity || !sourceId || !published) {
+      setErrorAdd("Please fill out all fields.");
+      return;
+    }
+    
     setIsLoadingAdd(true);
     setErrorAdd("");
     setSuccessAdd("");
 
-    if (!itemName || !genreId || !subgenreId || !price || !quantity || !sourceId) {
-      setErrorAdd("Please fill in all required fields (*).");
-      setIsLoadingAdd(false);
-      return;
-    }
-    
-    // Step 1: Create the Product object
-    const newProduct = {
-      Name: itemName,
-      Author: author || null,
-      Description: description || null,
-      Genre: parseInt(genreId, 10),
-      // --- FIX: Trying 'Subgenre' (all lowercase g) to match Excel dictionary ---
-      SubGenre: parseInt(subgenreId, 10),
-      // --- END FIX ---
-      Published: published ? new Date(published).toISOString() : null,
-      LastUpdatedBy: "adminAccount",
-      LastUpdated: new Date().toISOString(),
-    };
-
-
-    console.log("New Product Payload:", newProduct);
-
     try {
-      // Step 2: POST to /Product
-      const productResponse = await axios.post(productBaseUrl, newProduct, { withCredentials: true });
-      const newProductId = productResponse.data.ID;
-      
-      if (!newProductId) {
-        throw new Error("Failed to get new Product ID from response.");
-      }
-
-      // Step 3: Create the Stocktake object
-      const newStockItem = {
-        ProductId: newProductId,
-        SourceId: parseInt(sourceId, 10),
-        Price: parseFloat(price),
-        Quantity: parseInt(quantity, 10)
+      // Step 1: Create the Product
+      const productPayload = {
+        Name: itemName,
+        Author: author,
+        Description: description,
+        Genre: parseInt(genreId),
+        SubGenre: parseInt(subgenreId),
+        Published: published,
+        LastUpdatedBy: user.UserName, // Use logged-in user's name
+        LastUpdated: new Date().toISOString()
       };
 
-      // Step 4: POST to /Stocktake
-      await axios.post(stocktakeBaseUrl, newStockItem, { withCredentials: true });
+      const productResponse = await axios.post(productBaseUrl, productPayload, { withCredentials: true });
+      const newProductId = productResponse.data.ID;
 
-      setSuccessAdd(`Product "${itemName}" and its stock entry added successfully!`);
-      setIsLoadingAdd(false);
-      setItemName(""); setAuthor(""); setDescription(""); setGenreId("");
-      setSubgenreId(""); setPublished(""); setPrice(""); setQuantity(""); setSourceId("");
-      
+      // Step 2: Create the initial Stocktake entry for this product
+      const stocktakePayload = {
+        SourceId: parseInt(sourceId),
+        ProductId: newProductId,
+        Quantity: parseInt(quantity),
+        Price: parseFloat(price)
+      };
+
+      await axios.post(stocktakeBaseUrl, stocktakePayload, { withCredentials: true });
+
+      setSuccessAdd(`Product '${itemName}' (ID: ${newProductId}) and its stock item were created successfully!`);
+      setItemName("");
+      setAuthor("");
+      setDescription("");
+      setPublished("");
+      setGenreId("");
+      setSubgenreId("");
+      setPrice("");
+      setQuantity("");
+      setSourceId("1");
+
     } catch (error) {
-      console.error("Error adding item:", error);
-      // Log the specific error from the backend
-      setErrorAdd(error.response?.data?.msg || error.response?.data?.message || "Failed to add item. Product may be created without stock.");
+      console.error("Error adding item:", error.response || error);
+      setErrorAdd(error.response?.data?.message || "Failed to create item. Check all fields.");
+    } finally {
       setIsLoadingAdd(false);
     }
   };
 
-  // Search Item (Client-side)
+  // --- NEW: Handle Search Item ---
   const handleSearchItem = async (event) => {
     event.preventDefault();
-    if (!searchItemName.trim()) {
-      setErrorSearch("Please enter a product name to search.");
-      return;
-    }
     setIsLoadingSearch(true);
     setErrorSearch("");
     setSuccessSearch("");
-    setCurrentItem(null);
     setShowItemInfo(false);
+    setCurrentItem(null);
     setStocktakeEntries([]);
 
     try {
-      const response = await axios.get(productBaseUrl, { withCredentials: true });
-      const allProducts = response.data.list;
-      if (!allProducts) throw new Error("Could not fetch product list.");
-
-      const searchTermLower = searchItemName.toLowerCase();
-      const foundProduct = allProducts.find(
-        product => product.Name.toLowerCase() === searchTermLower
+      // 1. Fetch all products to find the one we want
+      const productsResponse = await axios.get(productBaseUrl, { withCredentials: true });
+      const product = (productsResponse.data.list || []).find(
+        p => p.Name.toLowerCase() === searchItemName.toLowerCase()
       );
 
-      if (foundProduct && foundProduct.ID) {
-        setCurrentItem(foundProduct);
-        setShowItemInfo(true);
-
-        const stocktakeResponse = await axios.get(stocktakeBaseUrl, { withCredentials: true });
-        if (stocktakeResponse.data && stocktakeResponse.data.list) {
-          const productStockEntries = stocktakeResponse.data.list.filter(
-            item => item.ProductId === foundProduct.ID
-          );
-          setStocktakeEntries(productStockEntries);
-        }
-      } else {
+      if (!product) {
         setErrorSearch(`Product "${searchItemName}" not found.`);
+        setIsLoadingSearch(false);
+        return;
       }
+      
+      setCurrentItem(product);
+
+      // 2. Fetch all stocktake items and filter for this product
+      const stocktakeResponse = await axios.get(stocktakeBaseUrl, { withCredentials: true });
+      const entries = (stocktakeResponse.data.list || [])
+        .filter(s => s.ProductId === product.ID)
+        // Enrich with source name (as seen in viewOrders.js)
+        .map(entry => ({
+          ...entry,
+          Source: entry.Source || { SourceName: `Source ID ${entry.SourceId}` }
+        }));
+        
+      setStocktakeEntries(entries);
+      setSuccessSearch(`Found product ID: ${product.ID}`);
+      setShowItemInfo(true);
+
     } catch (error) {
-      console.error("Error searching item:", error);
-      setErrorSearch("An error occurred during search.");
+      console.error("Error searching item:", error.response || error);
+      setErrorSearch(error.response?.data?.message || "Failed to search for item.");
     } finally {
       setIsLoadingSearch(false);
     }
   };
 
-  // Edit Product Description
+  // --- NEW: Handle Edit Item (Product Details) ---
   const handleEditItem = async () => {
-    if (!currentItem) return;
-    const newDescription = prompt("Enter new description:", currentItem.Description);
-    if (newDescription === null) return;
+    if (!currentItem || !user) return;
+
+    const newName = prompt("Enter new Item Name:", currentItem.Name);
+    const newAuthor = prompt("Enter new Author:", currentItem.Author);
+    const newDesc = prompt("Enter new Description:", currentItem.Description);
+
+    if (newName === null || newAuthor === null || newDesc === null) {
+      return; // User cancelled
+    }
 
     setIsLoadingSearch(true);
     setErrorSearch("");
     setSuccessSearch("");
+
     try {
-      await axios.patch(`${productBaseUrl}/${currentItem.ID}`,
-        { Description: newDescription, LastUpdated: new Date().toISOString(), LastUpdatedBy: "adminAccount" },
-        { withCredentials: true }
-      );
-      setSuccessSearch("Item description updated successfully!");
-      setCurrentItem({ ...currentItem, Description: newDescription });
+      const payload = {
+        Name: newName,
+        Author: newAuthor,
+        Description: newDesc,
+        LastUpdatedBy: user.UserName,
+        LastUpdated: new Date().toISOString()
+      };
+
+      await axios.patch(`${productBaseUrl}/${currentItem.ID}`, payload, { withCredentials: true });
+      
+      setSuccessSearch("Product details updated successfully!");
+      // Update local state to reflect change
+      setCurrentItem(prev => ({ ...prev, ...payload }));
+
     } catch (error) {
-      setErrorSearch("Failed to update description.");
+      console.error("Error updating item:", error.response || error);
+      setErrorSearch(error.response?.data?.message || "Failed to update item.");
     } finally {
       setIsLoadingSearch(false);
     }
   };
 
-  // Edit Stock Entry (Price/Quantity)
-  const handleEditStockItem = async (stockItem) => {
-    const { ItemId, Price, Quantity } = stockItem;
-    const newPrice = prompt("Enter new price:", Price);
-    const newQuantity = prompt("Enter new quantity:", Quantity);
-
-    if (newPrice === null || newQuantity === null) return;
-    const parsedPrice = parseFloat(newPrice);
-    const parsedQuantity = parseInt(newQuantity, 10);
-    if (isNaN(parsedPrice) || isNaN(parsedQuantity)) {
-      alert("Invalid input. Price and Quantity must be numbers.");
+  // --- NEW: Handle Delete Item ---
+  const handleDeleteItem = async () => {
+    if (!currentItem) return;
+    if (!window.confirm(`Are you sure you want to delete "${currentItem.Name}"? This action CANNOT be undone.`)) {
       return;
     }
 
     setIsLoadingSearch(true);
     setErrorSearch("");
     setSuccessSearch("");
+
     try {
-      await axios.patch(`${stocktakeBaseUrl}/${ItemId}`, 
-        { Price: parsedPrice, Quantity: parsedQuantity }, 
-        { withCredentials: true }
-      );
-      setSuccessSearch(`Stock for ItemID ${ItemId} updated successfully!`);
-      const pseudoEvent = { preventDefault: () => {} };
-      handleSearchItem(pseudoEvent); 
+      await axios.delete(`${productBaseUrl}/${currentItem.ID}`, { withCredentials: true });
+
+      setSuccessSearch(`Product "${currentItem.Name}" was deleted successfully.`);
+      // Clear the form
+      setCurrentItem(null);
+      setShowItemInfo(false);
+      setSearchItemName("");
+      setStocktakeEntries([]);
+
     } catch (error) {
-      setErrorSearch(error.response?.data?.message || "Failed to update stock.");
+      console.error("Error deleting item:", error.response || error);
+      setErrorSearch(error.response?.data?.message || "Failed to delete item. It may be part of an order.");
     } finally {
       setIsLoadingSearch(false);
     }
   };
 
-  // Delete Product
-  const handleDeleteItem = async () => {
-    if (!currentItem) return;
-    if (window.confirm(`Are you sure you want to delete "${currentItem.Name}"? This may fail if it is linked to stock or orders.`)) {
-      setIsLoadingSearch(true);
-      setErrorSearch("");
-      setSuccessSearch("");
-      try {
-        await axios.delete(`${productBaseUrl}/${currentItem.ID}`, { withCredentials: true });
-        setSuccessSearch("Item deleted successfully!");
-        setCurrentItem(null);
-        setShowItemInfo(false);
-        setSearchItemName("");
-      } catch (error) {
-        setErrorSearch(error.response?.data?.message || "Failed to delete item. It may be in use.");
-      } finally {
-        setIsLoadingSearch(false);
-      }
+  // --- NEW: Handle Edit Stock Item (Price/Quantity) ---
+  const handleEditStockItem = async (entry) => {
+    const newPrice = prompt(`Enter new price for ${entry.Source.SourceName} (ID: ${entry.ItemId}):`, entry.Price);
+    const newQuantity = prompt(`Enter new quantity for ${entry.Source.SourceName} (ID: ${entry.ItemId}):`, entry.Quantity);
+    
+    const parsedPrice = parseFloat(newPrice);
+    const parsedQuantity = parseInt(newQuantity, 10);
+
+    if (isNaN(parsedPrice) || isNaN(parsedQuantity)) {
+      setErrorSearch("Invalid price or quantity. Must be numbers.");
+      return;
+    }
+    
+    setIsLoadingSearch(true);
+    setErrorSearch("");
+    setSuccessSearch("");
+
+    try {
+      const payload = {
+        Price: parsedPrice,
+        Quantity: parsedQuantity
+      };
+
+      await axios.patch(`${stocktakeBaseUrl}/${entry.ItemId}`, payload, { withCredentials: true });
+
+      setSuccessSearch(`Stock item ${entry.ItemId} updated successfully!`);
+      // Update local state to reflect change
+      setStocktakeEntries(prevEntries =>
+        prevEntries.map(e =>
+          e.ItemId === entry.ItemId
+            ? { ...e, Price: parsedPrice, Quantity: parsedQuantity }
+            : e
+        )
+      );
+    } catch (error) {
+      console.error("Error updating stock item:", error.response || error);
+      setErrorSearch(error.response?.data?.message || "Failed to update stock item.");
+    } finally {
+      setIsLoadingSearch(false);
     }
   };
 
+
   return (
     <div className="management-container">
+      {/* --- NEW BUTTON --- */}
+      <button 
+        onClick={handleBackToDashboard} 
+        className="admin-manage-button" // Use a consistent class
+        style={{ marginBottom: '20px', width: 'auto', backgroundColor: '#6c757d', color: 'white' }} 
+      >
+        &larr; Back to Admin Dashboard
+      </button>
+      {/* --- END NEW BUTTON --- */}
+      
       <h1>Item Management</h1>
+      
       <div className="management-grid">
-        
+        {/* --- ADD ITEM FORM --- */}
         <div className="management-section">
-          <h2>Add Product & Stock</h2>
+          <h2>Add Item</h2>
+          {/* --- UPDATED: Converted to a functional form --- */}
           <form onSubmit={handleAddItem}>
+            {/* ... (Error/Success messages for Add) ... */}
+            {errorAdd && <div className="error-message">{errorAdd}</div>}
+            {successAdd && <div className="success-message">{successAdd}</div>}
+
             <div className="form-group">
-              <label>Name<span className="required">*</span></label>
-              <input type="text" placeholder="Item Name" value={itemName} onChange={(e) => setItemName(e.target.value)} required />
+              <label>Item Name<span className="required">*</span></label>
+              <input type="text" placeholder="Product Name" value={itemName} onChange={(e) => setItemName(e.target.value)} required />
             </div>
             <div className="form-group">
-              <label>Author</label>
-              <input type="text" placeholder="Author/Director" value={author} onChange={(e) => setAuthor(e.target.value)} />
+              <label>Author/Director/Developer<span className="required">*</span></label>
+              <input type="text" placeholder="Author" value={author} onChange={(e) => setAuthor(e.target.value)} required />
             </div>
             <div className="form-group">
               <label>Description</label>
               <textarea placeholder="Product Description" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
             <div className="form-group">
-              <label>Category<span className="required">*</span></label>
+              <label>Published Date<span className="required">*</span></label>
+              {/* --- UPDATED: Input type to date --- */}
+              <input type="date" value={published} onChange={(e) => setPublished(e.target.value)} required />
+            </div>
+            
+            {/* --- NEW: Dynamic Dropdowns --- */}
+            <div className="form-group">
+              <label>Genre<span className="required">*</span></label>
               <select value={genreId} onChange={(e) => setGenreId(e.target.value)} required>
-                <option value="">Select Category...</option>
-                <option value="1">Book</option>
-                <option value="2">Movie</option>
-                <option value="3">Game</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Sub-Genre<span className="required">*</span></label>
-              <select value={subgenreId} onChange={(e) => setSubgenreId(e.target.value)} required disabled={subGenreOptions.length === 0}>
-                <option value="">{genreId ? 'Select Sub-Genre...' : 'Select Category First'}</option>
-                {subGenreOptions.map(option => (
-                  <option key={option.SubGenreID} value={option.SubGenreID}>
-                    {option.Name}
-                  </option>
+                {/* --- FIXED: Added unique key --- */}
+                <option key="genre-placeholder" value="">Select Genre...</option>
+                {genres.map(g => (
+                  <option key={g.genreID} value={g.genreID}>{g.Name}</option>
                 ))}
               </select>
             </div>
             <div className="form-group">
-              <label>Published Date</label>
-              <input type="date" value={published} onChange={(e) => setPublished(e.target.value)} />
-            </div>
-            
-            <hr style={{ margin: '20px 0' }} />
-            <h4>Initial Stock Entry</h4>
-            
-            <div className="form-group">
-              <label>Source (Type)<span className="required">*</span></label>
-              <select value={sourceId} onChange={(e) => setSourceId(e.target.value)} required>
-                <option value="">Select Source Type...</option>
-                {sourceOptions.map(option => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
-                  </option>
+              <label>Subgenre<span className="required">*</span></label>
+              <select value={subgenreId} onChange={(e) => setSubgenreId(e.target.value)} required disabled={!genreId}>
+                {/* --- FIXED: Added unique key --- */}
+                <option key="subgenre-placeholder" value="">Select Subgenre...</option>
+                {subGenreOptions.map(sg => (
+                  <option key={sg.SubGenreID} value={sg.SubGenreID}>{sg.Name}</option>
                 ))}
               </select>
             </div>
+            {/* --- END NEW --- */}
+
             <div className="form-group">
-              <label>Price<span className="required">*</span></label>
-              <input type="number" step="0.01" min="0" placeholder="e.g., 29.99" value={price} onChange={(e) => setPrice(e.target.value)} required />
+              <label>Source ID<span className="required">*</span></label>
+              <input type="number" placeholder="e.g., 1 for Hard Copy" value={sourceId} onChange={(e) => setSourceId(e.target.value)} required />
             </div>
-            <div className="form-group">
-              <label>Quantity<span className="required">*</span></label>
-              <input type="number" step="1" min="0" placeholder="e.g., 50" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
+            <div className="form-row">
+              <div className="form-group">
+                <label>Price<span className="required">*</span></label>
+                <input type="number" step="0.01" placeholder="Price (e.g., 24.99)" value={price} onChange={(e) => setPrice(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label>Quantity<span className="required">*</span></label>
+                <input type="number" placeholder="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
+              </div>
             </div>
-            
-            {isLoadingAdd && <p>Loading...</p>}
-            {errorAdd && <p className="error-message">{errorAdd}</p>}
-            {successAdd && <p className="success-message">{successAdd}</p>}
-            
-            <button type="submit" className="btn-add" disabled={isLoadingAdd}>Add Product & Stock Entry</button>
+            <button type="submit" className="btn-add" disabled={isLoadingAdd}>
+              {isLoadingAdd ? "Adding..." : "Add Item"}
+            </button>
           </form>
         </div>
-
+        
+        {/* --- EDIT/DELETE ITEM FORM --- */}
         <div className="management-section">
-          <h2>Edit/Delete Product & Stock</h2>
+          <h2>Edit/Delete Item</h2>
+          {/* --- UPDATED: Converted to a functional form --- */}
           <form onSubmit={handleSearchItem} className="search-box">
-            <label>Search by Product Name<span className="required">*</span></label>
+            {/* ... (Error/Success messages for Search) ... */}
+            {errorSearch && <div className="error-message">{errorSearch}</div>}
+            {successSearch && <div className="success-message">{successSearch}</div>}
+
+            <label>Search by Item Name<span className="required">*</span></label>
             <input
               type="text"
-              placeholder="Search for product (exact name)"
+              placeholder="Enter exact item name..."
               value={searchItemName}
               onChange={(e) => setSearchItemName(e.target.value)}
               required
             />
-            <button type="submit" className="btn-search" disabled={isLoadingSearch}>Search</button>
+            <button type="submit" className="btn-search" disabled={isLoadingSearch}>
+              {isLoadingSearch ? "Searching..." : "Search"}
+            </button>
           </form>
 
-          {isLoadingSearch && <p>Loading...</p>}
-          {errorSearch && <p className="error-message">{errorSearch}</p>}
-          {successSearch && <p className="success-message">{successSearch}</p>}
-
+          {/* --- UPDATED: Info box now functional --- */}
           {showItemInfo && currentItem && (
             <>
-              <div className="item-info">
-                <h3>Product Details</h3>
-                <p><strong>ID:</strong> {currentItem.ID}</p>
+              <div className="user-info">
+                <h3>Product Details (ID: {currentItem.ID})</h3>
                 <p><strong>Name:</strong> {currentItem.Name}</p>
-                <p><strong>Author:</strong> {currentItem.Author || 'N/A'}</p>
-                <p><strong>Description:</strong> {currentItem.Description || 'N/A'}</p>
-                <p><strong>Genre ID:</strong> {typeof currentItem.Genre === 'number' ? currentItem.Genre : 'N/A'}</p> 
-                {/* This will show the SubGenre ID. If you need the name, more logic is needed */}
-                <p><strong>SubGenre ID:</strong> {currentItem.SubGenre || currentItem.subGenre}</p> 
+                <p><strong>Author:</strong> {currentItem.Author}</p>
+                <p><strong>Description:</strong> {currentItem.Description}</p>
               </div>
               <div className="button-row">
                 <button className="btn-edit" onClick={handleEditItem} disabled={isLoadingSearch}>
-                  Edit Description
+                  Edit Product Details
                 </button>
                 <button className="btn-delete" onClick={handleDeleteItem} disabled={isLoadingSearch}>
                   Delete Product

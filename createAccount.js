@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import axios from 'axios';
-//import { tryAddNewUser } from './helpers/userHelpers';
 
 const CreateAccount = ({ onCreateAccount }) => {
 
@@ -10,21 +9,16 @@ const CreateAccount = ({ onCreateAccount }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
   async function sha256(message) {
-    
     const msgBuffer = new TextEncoder().encode(message);
-   
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-   
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex; // Returns the final hash as a hex string
+    return hashHex;
   }
 
   const generateSalt = () => {
@@ -35,13 +29,11 @@ const CreateAccount = ({ onCreateAccount }) => {
   const handleCreateAccount = (event) => {
     event.preventDefault();
 
-    // email validation
     if (!fullName || !email || !password ) {
       setErrorMessage("Please fill in all required fields.");
       return;
     }
 
-    // email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setErrorMessage("Please enter a valid email address.");
@@ -49,85 +41,63 @@ const CreateAccount = ({ onCreateAccount }) => {
     }
 
     setIsLoading(true);
-
     setErrorMessage("");
     setSuccessMessage("");
-
     const salt = generateSalt();
 
      sha256(salt + password).then((hashedPW) => {
 
-      const newPatron = {
+      const newCustomer = {
         Email: email,
         Name: fullName,
         Salt: salt,
         HashPW: hashedPW
+      };
 
-         };
+      console.log("Creating new customer:", newCustomer);
 
-         console.log("Creating new patron:", newPatron);
-
-      // makes POST request to add patron to database
-      // No withCredentials needed for public account creation
+      // --- THIS IS THE FIX ---
+      // The endpoint for POST is /Customers (plural), not /Customer
       axios.post(
         `${baseUrl}/Patrons`,
-        newPatron,
+        newCustomer,
         {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
           }
-          // withCredentials: true  // NOT needed for public signup
         }
       )
-
+      // --- END FIX ---
       .then((response) => {
-        console.log("Patron account created successfully:", response.data);
+        console.log("Customer account created successfully:", response.data);
         setSuccessMessage(`Account for "${fullName}" created successfully! Redirecting to login...`);
 
-        // clears form after successful creation
         setFullName("");
         setEmail("");
         setPassword("");
-        //setAddress("");
-        //setPostcode("");
-        //setState("");
-
         setIsLoading(false);
 
         setTimeout(() => {
-
           window.location.href = "/login";
-
         }, 2000);
       })
       .catch((error) => {
-        // if something goes wrong
         console.error("Error creating account:", error);
-       
-
         let errorMsg = "Failed to create account. ";
         
         if (error.response) {
           const status = error.response.status;
-          
-          if (status === 400) {
-            errorMsg += error.response.data?.message || "Invalid data provided.";
-          } else if (status === 409) {
+          if (status === 409) {
             errorMsg += "An account with this email already exists.";
-          } else if (status === 500) {
-            errorMsg += "Server error. Please try again later.";
+          } else if (status === 404) {
+             errorMsg += "The create account API endpoint was not found (404)."
           } else {
-            errorMsg += error.response.data?.message || 
-                       error.response.data?.error || 
-                       "Please try again.";
+             errorMsg += error.response.data?.message || "Please try again.";
           }
-        } else if (error.request) {
-          errorMsg += "No response from server. Please check your connection.";
         } else {
-          errorMsg += error.message;
+          errorMsg += "No response from server.";
         }
-
         setErrorMessage(errorMsg);
         setIsLoading(false);
       });

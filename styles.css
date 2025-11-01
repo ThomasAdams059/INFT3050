@@ -5,6 +5,8 @@
 
 
 body {
+  margin: 0; /* --- FIX 1: Removes the white bar --- */
+  font-family: Arial, sans-serif; /* --- FIX 2: Sets a clean, modern font --- */
   color: #666666;
 
   padding-top: 60px;
@@ -1284,6 +1286,7 @@ button {
 }
 
 /* Buttons */
+.btn-search,
 .btn-add,
 .btn-edit,
 .btn-delete {
@@ -1301,6 +1304,11 @@ button {
 
 .btn-add {
   background-color: #5cb85c;
+  color: white;
+}
+
+.btn-search {
+  background-color: rgb(0, 116, 249);
   color: white;
 }
 

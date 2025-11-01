@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useSelector } from 'react-redux'; // --- 1. IMPORT useSelector ---
 
 // API URLs
 const ORDERS_URL = "http://localhost:3001/api/inft3050/Orders";
@@ -83,12 +84,12 @@ const OrderDetails = ({ stockItems }) => {
   if (error) return <p className="error-message" style={{ color: 'red', paddingLeft: '20px' }}>{error}</p>;
 
   return (
-    <div className="order-details-box" style={{ marginTop: '10px', padding: '10px 10px 10px 25px', borderTop: '1px solid #ddd', background: '#f9f9f9' }}>
-      <h4>Items in this Order:</h4>
+    <div className="order-details-box" style={{ marginTop: '15px', padding: '15px', borderTop: '1px solid #ddd', background: '#f9f9f9', borderRadius: '4px' }}>
+      <h4 style={{marginTop: 0, marginBottom: '10px'}}>Items in this Order:</h4>
       {items.length > 0 ? (
         <ul style={{ margin: 0, paddingLeft: '20px' }}>
           {items.map(item => (
-            <li key={item.id}>
+            <li key={item.id} style={{marginBottom: '5px'}}>
               {item.quantity}x {item.name} (@ ${item.price ? item.price.toFixed(2) : 'N/A'} each)
             </li>
           ))}
@@ -100,35 +101,67 @@ const OrderDetails = ({ stockItems }) => {
   );
 };
 
+// --- NEW: Date Formatting Function ---
+const formatDate = (dateString) => {
+    if (!dateString) return 'No Date Provided';
+    const date = new Date(dateString);
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+        return 'Invalid Date'; // This was the bug
+    }
+    // Format to a readable string
+    return date.toLocaleString('en-AU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
 
 // --- Main OrderHistory Component ---
-const OrderHistory = ({ currentUser }) => {
+const OrderHistory = () => {
     
+    // --- GET user FROM REDUX STORE ---
+    const { user } = useSelector((state) => state.auth);
+
     // State for fetching and displaying orders
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null); // For success messages
     const [selectedOrderId, setSelectedOrderId] = useState(null);
 
-    // Fetch orders when the currentUser prop is available
+    // --- State for editing an order ---
+    const [isEditing, setIsEditing] = useState(false);
+    const [editingOrder, setEditingOrder] = useState(null);
+    const [street, setStreet] = useState("");
+    const [suburb, setSuburb] = useState("");
+    const [postcode, setPostcode] = useState("");
+    const [orderState, setOrderState] = useState("NSW");
+    // ---
+
+    // Fetch orders when the 'user' from Redux is available
     useEffect(() => {
-        // Don't fetch if user isn't loaded or isn't a patron
-        if (!currentUser) {
+        // --- CHECK REDUX user ---
+        if (!user) {
             setLoading(false);
             setError("Please log in to view your order history.");
             return;
         }
+        
+        // --- NEW: Clear error if user is now loaded ---
+        setError(null);
 
         const fetchOrders = async () => {
             setLoading(true);
-            setError(null);
             try {
                 const response = await axios.get(ORDERS_URL, { withCredentials: true });
                 const allOrders = response.data.list || [];
                 
-                // Filter orders to find only those belonging to the current user
+                // --- FIX: Filter by order.TO.PatronId === user.UserID ---
                 const userOrders = allOrders.filter(order => 
-                    order.Customer === currentUser.UserID
+                    order.TO && order.TO.PatronId === user.UserID
                 );
                 
                 // Sort by date, newest first
@@ -148,28 +181,22 @@ const OrderHistory = ({ currentUser }) => {
         };
 
         fetchOrders();
-    }, [currentUser]); // Re-run effect if currentUser changes
+    }, [user]); // --- SET DEPENDENCY to user from Redux ---
 
 
-    // --- Sidebar and Navigation Logic (Unchanged) ---
+    // --- Sidebar and Navigation Logic ---
     const navigate = (path) => {
         window.location.href = path;
     };
     
-    const handleAddressBookClick = () => {
-        window.location.href = '/addressBook'; 
-    };
+    // --- REMOVED handleAddressBookClick ---
 
     const sidebarLinks = [
         { name: 'Account Dashboard', path: '/myAccount' },
         { name: 'Order History', path: '/orderHistory' },
         { name: 'Account Settings', path: '/accountSettings' },
-        { name: 'Address Book', path: '/addressBook' },
-        { name: 'Payment Methods', path: '/paymentMethod' },
     ];
-    // --- End Sidebar Logic ---
-
-    // Toggle for viewing order details
+    
     const handleViewDetailsClick = (orderId) => {
         if (selectedOrderId === orderId) {
             setSelectedOrderId(null); // Close if already open
@@ -178,13 +205,89 @@ const OrderHistory = ({ currentUser }) => {
         }
     };
 
+    // --- Handle opening the edit modal ---
+    const handleEditClick = (order) => {
+        setEditingOrder(order);
+        setStreet(order.StreetAddress);
+        setSuburb(order.Suburb);
+        setPostcode(order.PostCode);
+        setOrderState(order.State);
+        setIsEditing(true);
+        setError(null);
+        setSuccess(null);
+    };
+
+    // --- Handle closing the edit modal ---
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setEditingOrder(null);
+        setError(null);
+        setSuccess(null);
+    };
+
+    // --- Handle submitting the address update ---
+    const handleUpdateOrder = async (event) => {
+        event.preventDefault();
+        setError(null);
+        setSuccess(null);
+
+        if (!editingOrder) return;
+
+        const payload = {
+            StreetAddress: street,
+            Suburb: suburb,
+            PostCode: postcode,
+            State: orderState
+        };
+
+        try {
+            await axios.patch(
+                `${ORDERS_URL}/${editingOrder.OrderID}`,
+                payload,
+                { withCredentials: true }
+            );
+
+            // Update the order in the local state to reflect the change immediately
+            setOrders(prevOrders =>
+                prevOrders.map(order =>
+                    order.OrderID === editingOrder.OrderID ? { ...order, ...payload } : order
+                )
+            );
+            
+            setSuccess("Address updated successfully!");
+            handleCancelEdit(); // Close the modal
+
+        } catch (err) {
+            console.error("Error updating order:", err.response || err);
+            setError(err.response?.data?.message || "Failed to update order.");
+        }
+    };
+
+    // --- STYLING for buttons ---
+    const smallButtonStyle = {
+        padding: '5px 12px',
+        fontSize: '0.9em',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        color: 'white',
+        background: '#495867', // Main theme color
+    };
+
+    const editButtonStyle = {
+        ...smallButtonStyle,
+        background: '#ffc107', // Yellow for "Edit"
+        color: '#212529',
+    };
+    // --- END STYLING ---
+
 
     return (
         <div className="main-container">
             <h1 className="main-heading custom-header-color">Order History</h1>
 
-            <div className="three-column-layout">
-                {/* --- Sidebar --- */}
+            <div className="three-column-layout" style={{ gridTemplateColumns: '250px 1fr', gap: '30px' }}>
+                {/* --- Sidebar (Updated) --- */}
                 <div className="account-sidebar">
                     <h2 className="admin-box-heading">My Account</h2>
                     <ul className="sidebar-nav-list">
@@ -203,29 +306,49 @@ const OrderHistory = ({ currentUser }) => {
                 </div> 
 
                 {/* --- Main Order History Box --- */}
-                <div className="orderHistory-box">
+                <div className="orderHistory-box" style={{ height: 'auto', minHeight: '400px', gridColumn: 'span 1' }}>
                     <h2 className="admin-box-heading">Your Orders</h2>
                     
+                    {success && <p className="success-message" style={{color: 'green', textAlign: 'center'}}>{success}</p>}
+
                     <div className="cart-items-container">
                         {loading && <p>Loading orders...</p>}
-                        {error && <p className="error-message">{error}</p>}
+                        {error && <p className="error-message" style={{color: 'red', textAlign: 'center'}}>{error}</p>}
                         
                         {!loading && !error && orders.length > 0 && (
                             orders.map(order => (
-                                <div key={order.OrderID} className="list-item-row" style={{ borderBottom: '1px solid #eee', padding: '10px', marginBottom: '10px', background: '#fff' }}>
-                                    <p><strong>Order ID:</strong> {order.OrderID}</p>
-                                    <p><strong>Order Date:</strong> {new Date(order.OrderDate).toLocaleString()}</p>
-                                    <p>
+                                <div key={order.OrderID} className="list-item-row" style={{ borderBottom: '1px solid #eee', padding: '15px', marginBottom: '10px', background: '#fff', borderRadius: '5px' }}>
+                                    
+                                    {/* --- STYLING UPDATE --- */}
+                                    <p style={{margin: '0 0 5px 0'}}><strong>Order ID:</strong> {order.OrderID}</p>
+                                    <p style={{margin: '0 0 5px 0'}}>
+                                        <strong>Order Date:</strong> {formatDate(order.OrderDate)}
+                                    </p>
+                                    <p style={{margin: '0 0 10px 0'}}>
                                         <strong>Shipped To:</strong> {
                                         order.StreetAddress
                                         ? `${order.StreetAddress}, ${order.Suburb}, ${order.State} ${order.PostCode}`
                                         : 'N/A'
                                         }
                                     </p>
+                                    {/* --- END STYLING UPDATE --- */}
+
                                     
-                                    <button onClick={() => handleViewDetailsClick(order.OrderID)} style={{ marginTop: '5px' }}>
-                                        {selectedOrderId === order.OrderID ? 'Hide Items' : 'View Items'}
-                                    </button>
+                                    {/* --- Button row (STYLED) --- */}
+                                    <div style={{display: 'flex', gap: '10px', marginTop: '10px'}}>
+                                        <button 
+                                          style={smallButtonStyle}
+                                          onClick={() => handleViewDetailsClick(order.OrderID)}
+                                        >
+                                            {selectedOrderId === order.OrderID ? 'Hide Items' : 'View Items'}
+                                        </button>
+                                        <button 
+                                          style={editButtonStyle}
+                                          onClick={() => handleEditClick(order)}
+                                        >
+                                            Edit Shipping Address
+                                        </button>
+                                    </div>
 
                                     {selectedOrderId === order.OrderID && (
                                         <OrderDetails stockItems={order['Stocktake List']} />
@@ -240,24 +363,66 @@ const OrderHistory = ({ currentUser }) => {
                     </div>
                 </div> 
 
-                {/* --- Address Book Box (Placeholder) --- */}
-                <div className="threeColumns-account-container">
-                    <div className='admin-box-heading'>Address Book</div>
-                    <div className='underline'></div>
-                    
-                    <ul className="account-box-list">
-                        <li>Shipping Address: 123 street, suburb</li>
-                        <li>Secondary Shipping Address: 123 street, suburb</li>
-                        <li>Billing Address: 123 street, suburb</li>
-                    </ul>
-
-                    <button className="threeColumns-account-container-button" onClick={handleAddressBookClick}>
-                        Add New Address
-                    </button>
-                </div>
+                {/* --- DELETED: Address Book Box --- */}
+                
             </div>
+
+            {/* --- Edit Order Modal (Unchanged) --- */}
+            {isEditing && editingOrder && (
+                <div className="modal-backdrop" style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    background: 'rgba(0,0,0,0.5)', display: 'flex',
+                    justifyContent: 'center', alignItems: 'center', zIndex: 1000
+                }}>
+                    <div className="modal-content" style={{
+                        background: 'white', padding: '20px', borderRadius: '8px',
+                        width: '90%', maxWidth: '500px'
+                    }}>
+                        <form onSubmit={handleUpdateOrder}>
+                            <h2 className="admin-box-heading">Edit Address for Order #{editingOrder.OrderID}</h2>
+                            <div className="inputs">
+                                <div className='input'>
+                                    <label>Street Address*</label>
+                                    <input type="text" value={street} onChange={(e) => setStreet(e.target.value)} required />
+                                </div>
+                                <div className='input'>
+                                    <label>Suburb*</label>
+                                    <input type="text" value={suburb} onChange={(e) => setSuburb(e.target.value)} required />
+                                </div>
+                                <div className="input-row-2">
+                                    <div className='input'>
+                                        <label>Post Code*</label>
+                                        <input type="text" value={postcode} onChange={(e) => setPostcode(e.target.value)} required />
+                                    </div>
+                                    <div className='input'>
+                                        <label>State*</label>
+                                        <select value={orderState} onChange={(e) => setOrderState(e.target.value)} required>
+                                            <option value="NSW">NSW</option>
+                                            <option value="VIC">VIC</option>
+                                            <option value="QLD">QLD</option>
+                                            <option value="SA">SA</option>
+                                            <option value="WA">WA</option>
+                                            <option value="TAS">TAS</option>
+                                            <option value="NT">NT</option>
+                                            <option value="ACT">ACT</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            {error && <p className="error-message" style={{color: 'red'}}>{error}</p>}
+                            <div className="create-container" style={{marginTop: '20px'}}>
+                                <button type="submit" className="submit">Save Changes</button>
+                                <button type="button" className="submit gray" onClick={handleCancelEdit}>Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* --- END MODAL --- */}
+
         </div>
     );
 };
 
 export default OrderHistory;
+

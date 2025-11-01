@@ -226,32 +226,65 @@ const handleSearchItem = (event) => {
   setCurrentItem(null);
   setStocktakeEntries([]);
 
-  // gets all products
-  axios.get(`${productBaseUrl}?pageSize=1000`, { withCredentials: true })
-    .then((productsResponse) => {
-      console.log("Products fetched:", productsResponse.data);
-      
-      const product = (productsResponse.data.list || []).find(
-        p => p.Name.toLowerCase() === searchItemName.toLowerCase()
-      );
+  console.log(`Searching for: "${searchItemName}"`);
 
-      if (!product) {
-        setErrorSearch(`Product "${searchItemName}" not found.`);
+  // Recursive function to fetch multiple pages
+  const fetchProductsUntilFound = (page = 1, accumulatedProducts = []) => {
+    console.log(`Fetching page ${page}...`);
+    
+    return axios.get(`${productBaseUrl}?page=${page}`, { withCredentials: true })
+      .then((response) => {
+        const productsThisPage = response.data.list || [];
+        const allProducts = [...accumulatedProducts, ...productsThisPage];
+        
+        console.log(`Page ${page}: ${productsThisPage.length} products`);
+        console.log(`Total accumulated: ${allProducts.length} products`);
+        
+        // Try to find the product in what we have so far
+        const foundProduct = allProducts.find(
+          p => p.Name.toLowerCase() === searchItemName.toLowerCase()
+        );
+        
+        if (foundProduct) {
+          console.log(`FOUND IT! Product: "${foundProduct.Name}" (ID: ${foundProduct.ID})`);
+          return { product: foundProduct };
+        }
+        
+        // Check pagination info
+        const pageInfo = response.data.pageInfo;
+        console.log(`Page ${pageInfo.page} of ~${Math.ceil(pageInfo.totalRows / pageInfo.pageSize)}`);
+        
+        // If there are more pages and we haven't exceeded our limit
+        if (!pageInfo.isLastPage && page < 20) {
+          console.log(`Not found yet, fetching next page...`);
+          // Recursively fetch next page
+          return fetchProductsUntilFound(page + 1, allProducts);
+        } else {
+          console.log(`Product not found after searching ${allProducts.length} products`);
+          return { product: null };
+        }
+      });
+  };
+
+  // Start the recursive search
+  fetchProductsUntilFound()
+    .then((result) => {
+      if (!result.product) {
+        setErrorSearch(`Product "${searchItemName}" not found in database.`);
         setIsLoadingSearch(false);
-        return null; 
+        return null;
       }
       
-      console.log("Found product:", product);
-      setCurrentItem(product);
+      setCurrentItem(result.product);
 
-      // gets stocktake items for this product
+      // Fetch stocktake for this product
       return axios.get(stocktakeBaseUrl, { withCredentials: true })
         .then((stocktakeResponse) => {
-          return { product, stocktakeResponse };
+          return { product: result.product, stocktakeResponse };
         });
     })
     .then((result) => {
-      if (!result) return; // product not found
+      if (!result) return;
       
       const { product, stocktakeResponse } = result;
       
@@ -264,7 +297,7 @@ const handleSearchItem = (event) => {
           Source: entry.Source || { SourceName: `Source ID ${entry.SourceId}` }
         }));
         
-      console.log("Filtered stocktake entries:", entries);
+      console.log(`Found ${entries.length} stocktake entries`);
       
       setStocktakeEntries(entries);
       setSuccessSearch(`Found product ID: ${product.ID}`);
@@ -272,7 +305,7 @@ const handleSearchItem = (event) => {
       setIsLoadingSearch(false);
     })
     .catch((error) => {
-      console.error("Error searching item:", error.response || error);
+      console.error("Error searching:", error.response || error);
       setErrorSearch(error.response?.data?.message || "Failed to search for item.");
       setIsLoadingSearch(false);
     });

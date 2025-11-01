@@ -35,22 +35,6 @@ const AdminAccount = () => {
           <button className="admin-manage-button" onClick={handleManageUsersClick}>
             Manage Users
           </button>
-
-
-
-
-
-          {/* TEMPORARY BUTTON TO VIEW PAGES I'M MAKING */}
-
-          <button className="admin-manage-button" onClick={handleMyAccountClick}>
-            TEMP BUTTON
-          </button>
-
-
-
-
-
-
         </div>
         
         {/* Item Management Box */}
@@ -69,9 +53,9 @@ const AdminAccount = () => {
         <div className="admin-box">
           <h2 className="admin-box-heading">Patron Management</h2>
           <ul className="admin-task-list">
-            <li>Add New Patron</li>
             <li>Edit Existing Patron</li>
             <li>Delete Existing Patron</li>
+            <li>-</li>
           </ul>
           <button className="admin-manage-button" onClick={handleManagePatronsClick}>
             Manage Patrons

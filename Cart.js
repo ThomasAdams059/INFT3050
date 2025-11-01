@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux'; 
 import axios from 'axios';
 import ProductCard from './productCard';
 
-// --- UPDATED to accept cartItems, onOrderSuccess, and currentUser ---
-const CartPage = ({ isLoggedIn, isAdmin, isPatron, patronInfo, cartItems, onOrderSuccess, currentUser }) => {
-  // State for recommended items
+const CartPage = ({ cartItems, onRemoveItem, onClearCart }) => {
+  
+  // --- 1. CALL REDUX HOOK UNCONDITIONALLY ---
+  const { isLoggedIn, isAdmin, isPatron } = useSelector((state) => state.auth);
+
+  // --- 2. CALL ALL STATE HOOKS UNCONDITIONALLY ---
   const [recommendedItems, setRecommendedItems] = useState([]);
   const [loadingRecs, setLoadingRecs] = useState(true);
   const [recsError, setRecsError] = useState(null);
   
-  // --- NEW: State for order submission ---
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderError, setOrderError] = useState(null);
-  const [orderSuccess, setOrderSuccess] = useState(null);
-
-
-  // useEffect for fetching recommendations (Unchanged)
+  const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  
+  // --- 3. CALL EFFECT HOOK UNCONDITIONALLY ---
   useEffect(() => {
+    // Only run if user *is* a patron (optimization)
+    if (!isPatron) return; 
+    
     const fetchRecommendations = async () => {
       setLoadingRecs(true);
       setRecsError(null);
@@ -31,245 +34,155 @@ const CartPage = ({ isLoggedIn, isAdmin, isPatron, patronInfo, cartItems, onOrde
 
         const priceMap = {};
         stocktakeItems.forEach(item => {
-          if (item.SourceId === 1 && item.Price) { // Assuming SourceId 1 for a default price
-            priceMap[item.ProductId] = item.Price;
+          if (item.SourceId === 1 && item.Product) { // Only recommend hard-copy books
+            priceMap[item.Product.ID] = item.Price;
           }
         });
 
-        const allPricedProducts = allProducts.map(product => ({
-          id: product.ID,
-          name: product.Name,
-          price: priceMap[product.ID] ? `$${priceMap[product.ID].toFixed(2)}` : 'N/A',
-          author: product.Author,
-          description: product.Description,
-          image: "https://placehold.co/200x300/F4F4F5/18181B?text=Book"
-        }));
+        // Filter and format products that have a price
+        const pricedProducts = allProducts
+          .filter(p => priceMap[p.ID] !== undefined)
+          .map(p => ({
+            id: p.ID,
+            name: p.Name,
+            price: `$${priceMap[p.ID].toFixed(2)}`,
+            image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book'
+          }));
         
-        // Simple recommendation: filter out items already in cart and take first 5
-        const itemsInCartIds = new Set(cartItems.map(item => item.id));
-        const filteredRecs = allPricedProducts
-          .filter(product => !itemsInCartIds.has(product.id))
-          .slice(0, 5);
-
-        setRecommendedItems(filteredRecs);
+        // Get 5 random items for recommendations
+        const randomRecs = pricedProducts.sort(() => 0.5 - Math.random()).slice(0, 5);
+        setRecommendedItems(randomRecs);
 
       } catch (error) {
         console.error("Error fetching recommendations:", error);
-        setRecsError("Failed to load recommendations.");
+        setRecsError("Could not load recommendations.");
       } finally {
         setLoadingRecs(false);
       }
     };
 
     fetchRecommendations();
-    // Re-fetch recs if cart items change
-  }, [cartItems]);
+  }, [isPatron]); // Depend on isPatron to ensure it runs when true
 
+  // --- 4. CONDITIONAL RETURN (Access Control) MOVED BELOW HOOKS ---
+  if (!isPatron) {
+    return (
+      <div className="main-container">
+        <h1 className="main-heading custom-header-color">Access Denied</h1>
+        <p style={{textAlign: 'center'}}>Only logged-in customers (Patrons) can access the shopping cart.</p>
+      </div>
+    );
+  }
+  // --- END ACCESS CONTROL ---
 
-  // --- NEW: handlePlaceOrder function added back ---
-  const handlePlaceOrder = async () => {
-    // Double-check all conditions
-    if (!isLoggedIn || !isPatron || !patronInfo || !patronInfo.customerId) {
-      setOrderError("You must be logged in as a customer to place an order.");
-      return;
-    }
-    if (!cartItems || cartItems.length === 0) {
-      setOrderError("Your cart is empty.");
-      return;
-    }
-    if (isSubmitting) return; // Prevent double-clicks
-
-    setIsSubmitting(true);
-    setOrderError(null);
-    setOrderSuccess(null);
-
-    // --- NEW: Dynamic Address Logic ---
-    let shippingAddress = {
-      StreetAddress: "123 Placeholder St",
-      Suburb: "Placeholder",
-      PostCode: "2000",
-      State: "NSW"
-    };
-
-    // Check if the logged-in user object has address details
-    // (This will be true for Admins/Employees, but not Patrons)
-    if (currentUser && currentUser.StreetAddress) {
-      shippingAddress = {
-        StreetAddress: currentUser.StreetAddress,
-        Suburb: currentUser.Suburb,
-        PostCode: currentUser.PostCode,
-        State: currentUser.State
-      };
-    } else if (isPatron) {
-      // This is a Patron, and their address *should* come from an Address Book.
-      // Since that's not implemented, we'll use a placeholder and alert the user.
-      // TODO: This should be replaced with a fetch to the /Address endpoint.
-      alert("Note: Using a placeholder address. Please update your Address Book.");
-    }
-    // --- END: Dynamic Address Logic ---
-
-    // Build the "Stocktake List" for the API
-    // It needs to be an array of objects, where each object is just { ItemId: ... }
-    const stocktakeListForApi = [];
-    cartItems.forEach(item => {
-      // Add one entry for each *quantity* of the item
-      for (let i = 0; i < item.quantity; i++) {
-        stocktakeListForApi.push({ ItemId: item.stockItemId });
-      }
-    });
-
-    const orderBody = {
-      Customer: patronInfo.customerId,
-      // --- UPDATED: Use the dynamic address object ---
-      StreetAddress: shippingAddress.StreetAddress,
-      Suburb: shippingAddress.Suburb,
-      PostCode: shippingAddress.PostCode,
-      State: shippingAddress.State,
-      // --- END UPDATED ---
-      "Stocktake List": stocktakeListForApi
-    };
-
-    try {
-      const response = await axios.post(
-        `http://localhost:3001/api/inft3050/Orders`,
-        orderBody,
-        { withCredentials: true }
-      );
-
-      setOrderSuccess(`Order ${response.data.OrderID} created successfully!`);
-      
-      // Call the function from App.js to clear the cart
-      if (onOrderSuccess) {
-        onOrderSuccess();
-      }
-
-      // Redirect to order history after a short delay
-      setTimeout(() => {
-        window.location.href = '/orderHistory';
-      }, 2000);
-
-    } catch (error) {
-      console.error("Error creating order:", error.response || error);
-      setOrderError(`Failed to create order. ${error.response?.data?.message || 'Please try again.'}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  // --- END function ---
-
-  // Handle click on recommended item
+  // --- Click Handlers ---
   const handleCardClick = (productId) => {
     window.location.href = `/products?id=${productId}`;
   };
 
-  // Calculate total price
-  const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const handleCheckoutClick = () => {
+    window.location.href = '/createOrder'; // Navigate to the create order page
+  };
 
-  // --- UPDATED: Block non-patrons ---
-  if (!isLoggedIn) {
-    return (
-      <div className="main-container">
-        <h1 className="main-heading custom-header-color">Cart</h1>
-        <p>You must be logged in to view your cart.</p>
-        <button onClick={() => window.location.href='/login'} className="admin-manage-button" style={{width: 'auto'}}>Log In</button>
-      </div>
-    );
-  }
-  
-  // Block Admins and Employees
-  if (isAdmin || !isPatron) {
-    return (
-      <div className="main-container">
-        <h1 className="main-heading custom-header-color">Cart</h1>
-        <p>Admin and Employee accounts do not have a shopping cart.</p>
-      </div>
-    );
-  }
-  // --- END UPDATED BLOCK ---
-
+  // --- RENDER ---
   return (
     <div className="main-container">
       <h1 className="main-heading custom-header-color">Your Cart</h1>
-      
-      {/* --- UPDATED: Added flex styles for side-by-side layout --- */}
-      <div 
-        className="cart-layout-container"
-        style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}
-      >
-        {/* --- UPDATED: Set width for cart items box (left side) --- */}
-        <div 
-          className="cart-items-box"
-          style={{ flex: '2', minWidth: '300px' }}
-        >
-          <h2>Order Summary</h2>
-          
+      <div className="cart-layout">
+
+        {/* --- LEFT COLUMN: Cart Items --- */}
+        <div className="cart-box" style={{ flex: '2 1 600px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h1 className="cart-heading">Items ({cartItems.length})</h1>
+            
+            {/* --- NEW: Clear Cart Button --- */}
+            {cartItems.length > 0 && (
+              <button 
+                className="btn-delete" 
+                style={{ width: 'auto', padding: '8px 12px', marginTop: 0 }}
+                onClick={onClearCart}
+              >
+                Clear Cart
+              </button>
+            )}
+            {/* --- END NEW --- */}
+            
+          </div>
+
           <div className="cart-items-container">
-            {/* Check if cartItems exists and has items */}
-            {cartItems && cartItems.length > 0 ? (
-              <>
-                {cartItems.map(item => (
-                  <div key={item.stockItemId} className="cart-item-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', padding: '15px 0' }}>
-                    <div>
-                      <h4 style={{ margin: 0 }}>{item.name}</h4>
-                      <p style={{ margin: '5px 0' }}>Type: {item.sourceName}</p>
-                      <p style={{ margin: '5px 0' }}>Unit Price: ${item.price.toFixed(2)}</p>
-                      {/* TODO: Add buttons to change quantity */}
+            {cartItems.length > 0 ? (
+              cartItems.map(item => (
+                <div key={item.stockItemId} className="cart-item">
+                  <div className="cart-item-details">
+                    <div className="cart-item-image-container">
+                      <img src={item.image} alt={item.name} className="cart-item-image" />
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p>Quantity: {item.quantity}</p>
-                      <p><strong>Subtotal: ${(item.price * item.quantity).toFixed(2)}</strong></p>
-                      {/* TODO: Add a "Remove" button */}
+                    <div>
+                      <h3 className="cart-item-name">{item.name}</h3>
+                      <p className="cart-item-price" style={{ fontSize: '0.9em' }}>
+                        {item.sourceName} - ${item.price.toFixed(2)}
+                      </p>
+                      <p className="cart-item-price">Quantity: {item.quantity}</p>
                     </div>
                   </div>
-                ))}
-                
-                {/* Cart Total */}
-                <div className="cart-total" style={{ marginTop: '20px', textAlign: 'right', fontSize: '1.5em' }}>
-                  <strong>
-                    Total: ${cartTotal.toFixed(2)}
-                  </strong>
+                  <div style={{ textAlign: 'right' }}>
+                    <p className="cart-item-price" style={{ fontWeight: 'bold' }}>
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </p>
+                    
+                    {/* --- NEW: Remove Item Button --- */}
+                    <button 
+                      onClick={() => onRemoveItem(item.stockItemId)}
+                      style={{ 
+                        background: 'none', 
+                        border: 'none', 
+                        color: '#d9534f', 
+                        cursor: 'pointer', 
+                        textDecoration: 'underline' 
+                      }}
+                    >
+                      Remove
+                    </button>
+                    {/* --- END NEW --- */}
+                    
+                  </div>
                 </div>
-              </>
+              ))
             ) : (
-              // If cart is empty, show this
-              <p>Your cart is currently empty.</p>
+              <p>Your cart is empty.</p>
             )}
           </div>
-          
-          {/* --- NEW: Order Status Messages --- */}
-          {orderError && <p className="error-message" style={{ color: 'red' }}>{orderError}</p>}
-          {orderSuccess && <p className="success-message" style={{ color: 'green' }}>{orderSuccess}</p>}
 
+          <div className="cart-total-section">
+            <span className="cart-total-text">Total:</span>
+            <span className="cart-total-price-text">${cartTotal.toFixed(2)}</span>
+          </div>
+
+          {/* --- UPDATED: Checkout Button --- */}
           <button
-            // --- UPDATED: Button class for styling ---
             className="cart-checkout-button"
-            style={{
-              backgroundColor: 'green',
+            onClick={handleCheckoutClick} // Use navigation handler
+            style={{ 
+              marginTop: '20px', 
+              backgroundColor: 'green', 
               color: 'white',
-              opacity: (!patronInfo || !patronInfo.customerId || !cartItems || cartItems.length === 0 || isSubmitting || orderSuccess) ? 0.5 : 1
+              cursor: (cartItems.length === 0) ? 'not-allowed' : 'pointer'
             }}
-            onClick={handlePlaceOrder}
-            disabled={
-              !patronInfo || !patronInfo.customerId || 
-              !cartItems || cartItems.length === 0 || 
-              isSubmitting || orderSuccess // Disable if submitting or already successful
-            }
+            disabled={cartItems.length === 0}
           >
-            {/* --- UPDATED: Button text changed --- */}
-            {isSubmitting ? 'Confirming...' : 'Confirm Order'}
+            Proceed to Checkout
           </button>
+          {/* --- END UPDATE --- */}
+
         </div>
 
-        {/* --- UPDATED: Set width for recommended box (right side) --- */}
-        <div 
-          className="recommended-box"
-          style={{ flex: '1', minWidth: '300px' }}
-        >
+        {/* --- RIGHT COLUMN: Recommended Items --- */}
+        <div className="recommended-box" style={{ flex: '1 1 300px', minWidth: '250px' }}>
           <h1 className="recommended-heading">Recommended For You</h1>
           {loadingRecs && <p>Loading recommendations...</p>}
           {recsError && <p className="error-message">{recsError}</p>}
           {!loadingRecs && !recsError && (
-            <div className="recommended-items-container-updated"> 
+            <div className="recommended-items-container-updated" style={{ maxHeight: '600px', overflowY: 'auto' }}> 
               {recommendedItems.length > 0 ? (
                 recommendedItems.map(product => (
                   <ProductCard
@@ -277,8 +190,6 @@ const CartPage = ({ isLoggedIn, isAdmin, isPatron, patronInfo, cartItems, onOrde
                     imageSrc={product.image}
                     productName={product.name}
                     price={product.price}
-                    author={product.author}
-                    description={product.description}
                     onClick={() => handleCardClick(product.id)}
                   />
                 ))
@@ -294,4 +205,3 @@ const CartPage = ({ isLoggedIn, isAdmin, isPatron, patronInfo, cartItems, onOrde
 };
 
 export default CartPage;
-

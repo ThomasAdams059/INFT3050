@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useSelector } from 'react-redux';
 
 // --- UPDATED: Accept currentUser prop ---
-const ItemManagement = ({ currentUser }) => {
+const ItemManagement = () => {
   
-  // --- NEW: Handle nested user object (consistent with other fixes) ---
-  const user = currentUser ? (currentUser.user || currentUser) : null;
+    const { user } = useSelector((state) => state.auth);
 
   // --- State for Add Item form ---
   const [itemName, setItemName] = useState("");
@@ -18,10 +18,12 @@ const ItemManagement = ({ currentUser }) => {
   const [genreId, setGenreId] = useState(""); 
   const [subGenreOptions, setSubGenreOptions] = useState([]);
   const [subgenreId, setSubgenreId] = useState("");
+  const [sources, setSources] = useState([]);
+  const [sourceId, setSourceId] = useState("");
   
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [sourceId, setSourceId] = useState("1"); // Default to 1 (Hard Copy Book)
+  
 
   // --- State for Edit/Delete form ---
   const [searchItemName, setSearchItemName] = useState("");
@@ -49,103 +51,149 @@ const ItemManagement = ({ currentUser }) => {
   };
   // --- END NEW ---
 
-  // --- NEW: Fetch Genres on component load ---
+  // gets genres
+useEffect(() => {
+  axios.get(`${baseUrl}/Genre`, { withCredentials: true })
+    .then((response) => {
+      setGenres(response.data.list || []);
+    })
+    .catch((err) => {
+      console.error("Error getting genres:", err);
+      setErrorAdd("Failed to load genres. Refresh the page."); // maybe get rid of this not exactly needed?
+    });
+}, []);
+
+// gets Sources
   useEffect(() => {
-    const fetchGenres = async () => {
-      try {
-        // --- FIXED: Added withCredentials ---
-        const response = await axios.get(`${baseUrl}/Genre`, { withCredentials: true });
-        setGenres(response.data.list || []);
-      } catch (err) {
-        console.error("Error fetching genres:", err);
-        setErrorAdd("Failed to load genres. Refresh the page.");
-      }
-    };
-    fetchGenres();
+    axios.get(`${baseUrl}/Source`, { withCredentials: true })
+      .then((response) => {
+        console.log("got sources:", response.data);
+        setSources(response.data.list || []);
+      })
+      .catch((err) => {
+        console.error("Error getting sources:", err);
+        setErrorAdd("Failed to load sources. Refresh the page.");
+      });
   }, []);
 
-  // --- NEW: Fetch Subgenres when Genre changes ---
-  useEffect(() => {
-    const fetchSubgenres = async () => {
-      if (!genreId) {
-        setSubGenreOptions([]);
-        setSubgenreId("");
-        return;
-      }
+  // gets Subgenres when Genre changes
+useEffect(() => {
+  if (!genreId) {
+    setSubGenreOptions([]);
+    setSubgenreId("");
+    return;
+  }
+  
+  let subGenreEndpoint = "";
+  switch (parseInt(genreId)) {
+    case 1:
+      subGenreEndpoint = `${baseUrl}/BookGenre`;
+      break;
+    case 2:
+      subGenreEndpoint = `${baseUrl}/MovieGenre`;
+      break;
+    case 3:
+      subGenreEndpoint = `${baseUrl}/GameGenre`;
+      break;
+    default:
+      setSubGenreOptions([]);
+      setSubgenreId("");
+      return;
+  }
+
+  axios.get(subGenreEndpoint, { withCredentials: true })
+    .then((response) => {
+
+      // error log get rid later
+      console.log("Subgenres fetched:", response.data);
+
+      setSubGenreOptions(response.data.list || []);
+      setSubgenreId("");
+    })
+    .catch((err) => {
+      console.error("Error getting subgenres:", err);
+      setErrorAdd("Failed to load subgenres.");
+    });
+}, [genreId]);
+
+// handles add items new attempt to this
+const handleAddItem = (event) => {
+  event.preventDefault();
+  
+  if (!user) {
+    setErrorAdd("You must be logged in to add an item.");
+    return;
+  }
+  
+  if (!itemName || !author || !genreId || !subgenreId || !price || !quantity || !sourceId || !published) {
+    setErrorAdd("Please fill out all fields.");
+    return;
+  }
+  
+  setIsLoadingAdd(true);
+  setErrorAdd("");
+  setSuccessAdd("");
+
+  // makes the product 
+  const productAddition = {
+    Name: itemName,
+    Author: author,
+    Description: description,
+    Genre: parseInt(genreId),
+    SubGenre: parseInt(subgenreId),
+    Published: published,
+    LastUpdatedBy: user?.username || user?.UserName || user?.name || "admin", // changed from just user.UserName
+    LastUpdated: new Date().toISOString()
+  };
+
+  // more error logs
+  console.log("=== ADDING PRODUCT ===");
+  console.log("product added:", productAddition);
+
+  axios.post(productBaseUrl, productAddition, { withCredentials: true })
+    .then((productResponse) => {
+      console.log("Product response:", productResponse);
+      console.log("Product response data:", productResponse.data);
       
-      let subGenreEndpoint = "";
-      switch (parseInt(genreId)) {
-        case 1: // Book
-          subGenreEndpoint = `${baseUrl}/BookGenre`;
-          break;
-        case 2: // Movie
-          subGenreEndpoint = `${baseUrl}/MovieGenre`;
-          break;
-        case 3: // Game
-          subGenreEndpoint = `${baseUrl}/GameGenre`;
-          break;
-        default:
-          setSubGenreOptions([]);
-          setSubgenreId("");
-          return;
+      // same as the user role one, trying different ID field names
+      const newProductId = productResponse.data.ID || 
+                          productResponse.data.id || 
+                          productResponse.data.ProductID ||
+                          productResponse.data.productId;
+      
+      if (!newProductId) {
+        console.error("No product ID in response:", productResponse.data);
+        throw new Error("Product was created but ID was not returned"); // added since last time it said it added on our end but not actually added in database
       }
 
-      try {
-        // --- FIXED: Added withCredentials ---
-        const response = await axios.get(subGenreEndpoint, { withCredentials: true });
-        setSubGenreOptions(response.data.list || []);
-        setSubgenreId(""); // Reset subgenre selection
-      } catch (err) {
-        console.error("Error fetching subgenres:", err);
-        setErrorAdd("Failed to load subgenres.");
-      }
-    };
-    fetchSubgenres();
-  }, [genreId]); // Dependency array
-
-  // --- NEW: Handle Add Item ---
-  const handleAddItem = async (event) => {
-    event.preventDefault();
-    if (!user) {
-      setErrorAdd("You must be logged in to add an item.");
-      return;
-    }
-    if (!itemName || !author || !genreId || !subgenreId || !price || !quantity || !sourceId || !published) {
-      setErrorAdd("Please fill out all fields.");
-      return;
-    }
-    
-    setIsLoadingAdd(true);
-    setErrorAdd("");
-    setSuccessAdd("");
-
-    try {
-      // Step 1: Create the Product
-      const productPayload = {
-        Name: itemName,
-        Author: author,
-        Description: description,
-        Genre: parseInt(genreId),
-        SubGenre: parseInt(subgenreId),
-        Published: published,
-        LastUpdatedBy: user.UserName, // Use logged-in user's name
-        LastUpdated: new Date().toISOString()
-      };
-
-      const productResponse = await axios.post(productBaseUrl, productPayload, { withCredentials: true });
-      const newProductId = productResponse.data.ID;
-
-      // Step 2: Create the initial Stocktake entry for this product
-      const stocktakePayload = {
+      console.log("New Product ID:", newProductId);
+      
+      // stocktake entry creation 
+      const stocktakeAddition = {
         SourceId: parseInt(sourceId),
         ProductId: newProductId,
         Quantity: parseInt(quantity),
         Price: parseFloat(price)
       };
 
-      await axios.post(stocktakeBaseUrl, stocktakePayload, { withCredentials: true });
+      console.log("=== ADDING STOCKTAKE ===");
+      console.log("Stocktake addition:", stocktakeAddition);
 
-      setSuccessAdd(`Product '${itemName}' (ID: ${newProductId}) and its stock item were created successfully!`);
+      return axios.post(stocktakeBaseUrl, stocktakeAddition, { withCredentials: true })
+        .then((stocktakeResponse) => {
+          console.log("Stocktake response:", stocktakeResponse);
+          console.log("Stocktake response data:", stocktakeResponse.data);
+          
+          return { productId: newProductId, stocktakeResponse };
+        });
+    })
+    .then((result) => {
+      console.log(" Sucess!!!");
+      console.log("Product and stocktake created successfully");
+      
+      setSuccessAdd(`Product '${itemName}' (ID: ${result.productId}) and its stock item were created successfully!`);
+      
+      // clears form
       setItemName("");
       setAuthor("");
       setDescription("");
@@ -154,29 +202,35 @@ const ItemManagement = ({ currentUser }) => {
       setSubgenreId("");
       setPrice("");
       setQuantity("");
-      setSourceId("1");
-
-    } catch (error) {
-      console.error("Error adding item:", error.response || error);
-      setErrorAdd(error.response?.data?.message || "Failed to create item. Check all fields.");
-    } finally {
+      setSourceId("");
       setIsLoadingAdd(false);
-    }
-  };
+    })
+    .catch((error) => {
+      console.error("=== ERROR ADDING ITEM ===");
+      console.error("Error object:", error);
+      console.error("Error response:", error.response);
+      console.error("Error response data:", error.response?.data);
+      
+      setErrorAdd(error.response?.data?.message || error.message || "Failed to create item. Check console for details.");
+      setIsLoadingAdd(false);
+    });
+};
 
-  // --- NEW: Handle Search Item ---
-  const handleSearchItem = async (event) => {
-    event.preventDefault();
-    setIsLoadingSearch(true);
-    setErrorSearch("");
-    setSuccessSearch("");
-    setShowItemInfo(false);
-    setCurrentItem(null);
-    setStocktakeEntries([]);
+  // handles searching of items
+const handleSearchItem = (event) => {
+  event.preventDefault();
+  setIsLoadingSearch(true);
+  setErrorSearch("");
+  setSuccessSearch("");
+  setShowItemInfo(false);
+  setCurrentItem(null);
+  setStocktakeEntries([]);
 
-    try {
-      // 1. Fetch all products to find the one we want
-      const productsResponse = await axios.get(productBaseUrl, { withCredentials: true });
+  // gets all products
+  axios.get(`${productBaseUrl}?pageSize=1000`, { withCredentials: true })
+    .then((productsResponse) => {
+      console.log("Products fetched:", productsResponse.data);
+      
       const product = (productsResponse.data.list || []).find(
         p => p.Name.toLowerCase() === searchItemName.toLowerCase()
       );
@@ -184,128 +238,143 @@ const ItemManagement = ({ currentUser }) => {
       if (!product) {
         setErrorSearch(`Product "${searchItemName}" not found.`);
         setIsLoadingSearch(false);
-        return;
+        return null; 
       }
       
+      console.log("Found product:", product);
       setCurrentItem(product);
 
-      // 2. Fetch all stocktake items and filter for this product
-      const stocktakeResponse = await axios.get(stocktakeBaseUrl, { withCredentials: true });
+      // gets stocktake items for this product
+      return axios.get(stocktakeBaseUrl, { withCredentials: true })
+        .then((stocktakeResponse) => {
+          return { product, stocktakeResponse };
+        });
+    })
+    .then((result) => {
+      if (!result) return; // product not found
+      
+      const { product, stocktakeResponse } = result;
+      
+      console.log("Stocktake data:", stocktakeResponse.data);
+      
       const entries = (stocktakeResponse.data.list || [])
         .filter(s => s.ProductId === product.ID)
-        // Enrich with source name (as seen in viewOrders.js)
         .map(entry => ({
           ...entry,
           Source: entry.Source || { SourceName: `Source ID ${entry.SourceId}` }
         }));
         
+      console.log("Filtered stocktake entries:", entries);
+      
       setStocktakeEntries(entries);
       setSuccessSearch(`Found product ID: ${product.ID}`);
       setShowItemInfo(true);
-
-    } catch (error) {
+      setIsLoadingSearch(false);
+    })
+    .catch((error) => {
       console.error("Error searching item:", error.response || error);
       setErrorSearch(error.response?.data?.message || "Failed to search for item.");
-    } finally {
       setIsLoadingSearch(false);
-    }
+    });
+};
+
+// editing an existing item
+const handleEditItem = () => {
+  if (!currentItem || !user) return;
+
+  const newName = prompt("Enter new Item Name:", currentItem.Name);
+  const newAuthor = prompt("Enter new Author:", currentItem.Author);
+  const newDesc = prompt("Enter new Description:", currentItem.Description);
+
+  if (newName === null || newAuthor === null || newDesc === null) {
+    return; // admin cancelled
+  }
+
+  setIsLoadingSearch(true);
+  setErrorSearch("");
+  setSuccessSearch("");
+
+  const productEdit = {
+    Name: newName,
+    Author: newAuthor,
+    Description: newDesc,
+    LastUpdatedBy: user?.username || user?.UserName || user?.name || "admin",
+    LastUpdated: new Date().toISOString()
   };
 
-  // --- NEW: Handle Edit Item (Product Details) ---
-  const handleEditItem = async () => {
-    if (!currentItem || !user) return;
-
-    const newName = prompt("Enter new Item Name:", currentItem.Name);
-    const newAuthor = prompt("Enter new Author:", currentItem.Author);
-    const newDesc = prompt("Enter new Description:", currentItem.Description);
-
-    if (newName === null || newAuthor === null || newDesc === null) {
-      return; // User cancelled
-    }
-
-    setIsLoadingSearch(true);
-    setErrorSearch("");
-    setSuccessSearch("");
-
-    try {
-      const payload = {
-        Name: newName,
-        Author: newAuthor,
-        Description: newDesc,
-        LastUpdatedBy: user.UserName,
-        LastUpdated: new Date().toISOString()
-      };
-
-      await axios.patch(`${productBaseUrl}/${currentItem.ID}`, payload, { withCredentials: true });
-      
+  axios.patch(`${productBaseUrl}/${currentItem.ID}`, productEdit, { withCredentials: true })
+    .then((response) => {
+      console.log("Product updated:", response);
       setSuccessSearch("Product details updated successfully!");
-      // Update local state to reflect change
-      setCurrentItem(prev => ({ ...prev, ...payload }));
-
-    } catch (error) {
+      setCurrentItem(prev => ({ ...prev, ...productEdit }));
+      setIsLoadingSearch(false);
+    })
+    .catch((error) => {
       console.error("Error updating item:", error.response || error);
       setErrorSearch(error.response?.data?.message || "Failed to update item.");
-    } finally {
       setIsLoadingSearch(false);
-    }
-  };
+    });
+};
 
-  // --- NEW: Handle Delete Item ---
-  const handleDeleteItem = async () => {
-    if (!currentItem) return;
-    if (!window.confirm(`Are you sure you want to delete "${currentItem.Name}"? This action CANNOT be undone.`)) {
-      return;
-    }
+// deleting an existing item
+const handleDeleteItem = () => {
+  if (!currentItem) return;
+  
+  if (!window.confirm(`Are you sure you want to delete "${currentItem.Name}"? This action CANNOT be undone.`)) {
+    return;
+  }
 
-    setIsLoadingSearch(true);
-    setErrorSearch("");
-    setSuccessSearch("");
+  setIsLoadingSearch(true);
+  setErrorSearch("");
+  setSuccessSearch("");
 
-    try {
-      await axios.delete(`${productBaseUrl}/${currentItem.ID}`, { withCredentials: true });
-
+  axios.delete(`${productBaseUrl}/${currentItem.ID}`, { withCredentials: true })
+    .then((response) => {
+      console.log("Product deleted:", response);
       setSuccessSearch(`Product "${currentItem.Name}" was deleted successfully.`);
-      // Clear the form
+      
+      // clears the form
       setCurrentItem(null);
       setShowItemInfo(false);
       setSearchItemName("");
       setStocktakeEntries([]);
-
-    } catch (error) {
-      console.error("Error deleting item:", error.response || error);
-      setErrorSearch(error.response?.data?.message || "Failed to delete item. It may be part of an order.");
-    } finally {
       setIsLoadingSearch(false);
-    }
+    })
+    .catch((error) => {
+      console.error("Error deleting item:", error.response || error); // error logs 
+      setErrorSearch(error.response?.data?.message || "Failed to delete item. It may be part of an order.");
+      setIsLoadingSearch(false);
+    });
+};
+
+
+// editing the price and quantity from stocktake table 
+const handleEditStockItem = (entry) => {
+  const newPrice = prompt(`Enter new price for ${entry.Source.SourceName} (ID: ${entry.ItemId}):`, entry.Price);
+  const newQuantity = prompt(`Enter new quantity for ${entry.Source.SourceName} (ID: ${entry.ItemId}):`, entry.Quantity);
+  
+  const parsedPrice = parseFloat(newPrice);
+  const parsedQuantity = parseInt(newQuantity, 10);
+
+  if (isNaN(parsedPrice) || isNaN(parsedQuantity)) {
+    setErrorSearch("Invalid price or quantity. Must be numbers.");
+    return;
+  }
+  
+  setIsLoadingSearch(true);
+  setErrorSearch("");
+  setSuccessSearch("");
+
+  const productStockEdit = {
+    Price: parsedPrice,
+    Quantity: parsedQuantity
   };
 
-  // --- NEW: Handle Edit Stock Item (Price/Quantity) ---
-  const handleEditStockItem = async (entry) => {
-    const newPrice = prompt(`Enter new price for ${entry.Source.SourceName} (ID: ${entry.ItemId}):`, entry.Price);
-    const newQuantity = prompt(`Enter new quantity for ${entry.Source.SourceName} (ID: ${entry.ItemId}):`, entry.Quantity);
-    
-    const parsedPrice = parseFloat(newPrice);
-    const parsedQuantity = parseInt(newQuantity, 10);
-
-    if (isNaN(parsedPrice) || isNaN(parsedQuantity)) {
-      setErrorSearch("Invalid price or quantity. Must be numbers.");
-      return;
-    }
-    
-    setIsLoadingSearch(true);
-    setErrorSearch("");
-    setSuccessSearch("");
-
-    try {
-      const payload = {
-        Price: parsedPrice,
-        Quantity: parsedQuantity
-      };
-
-      await axios.patch(`${stocktakeBaseUrl}/${entry.ItemId}`, payload, { withCredentials: true });
-
+  axios.patch(`${stocktakeBaseUrl}/${entry.ItemId}`, productStockEdit, { withCredentials: true })
+    .then((response) => {
+      console.log("Stock item updated:", response);
       setSuccessSearch(`Stock item ${entry.ItemId} updated successfully!`);
-      // Update local state to reflect change
+      
       setStocktakeEntries(prevEntries =>
         prevEntries.map(e =>
           e.ItemId === entry.ItemId
@@ -313,13 +382,14 @@ const ItemManagement = ({ currentUser }) => {
             : e
         )
       );
-    } catch (error) {
+      setIsLoadingSearch(false);
+    })
+    .catch((error) => {
       console.error("Error updating stock item:", error.response || error);
       setErrorSearch(error.response?.data?.message || "Failed to update stock item.");
-    } finally {
       setIsLoadingSearch(false);
-    }
-  };
+    });
+};
 
 
   return (
@@ -340,67 +410,121 @@ const ItemManagement = ({ currentUser }) => {
         {/* --- ADD ITEM FORM --- */}
         <div className="management-section">
           <h2>Add Item</h2>
-          {/* --- UPDATED: Converted to a functional form --- */}
           <form onSubmit={handleAddItem}>
-            {/* ... (Error/Success messages for Add) ... */}
             {errorAdd && <div className="error-message">{errorAdd}</div>}
             {successAdd && <div className="success-message">{successAdd}</div>}
 
             <div className="form-group">
               <label>Item Name<span className="required">*</span></label>
-              <input type="text" placeholder="Product Name" value={itemName} onChange={(e) => setItemName(e.target.value)} required />
+              <input 
+                type="text" 
+                placeholder="Product Name" 
+                value={itemName} 
+                onChange={(e) => setItemName(e.target.value)} 
+                required 
+              />
             </div>
+
             <div className="form-group">
               <label>Author/Director/Developer<span className="required">*</span></label>
-              <input type="text" placeholder="Author" value={author} onChange={(e) => setAuthor(e.target.value)} required />
+              <input 
+                type="text" 
+                placeholder="Author" 
+                value={author} 
+                onChange={(e) => setAuthor(e.target.value)} 
+                required 
+              />
             </div>
+
             <div className="form-group">
               <label>Description</label>
-              <textarea placeholder="Product Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <textarea 
+                placeholder="Product Description" 
+                value={description} 
+                onChange={(e) => setDescription(e.target.value)} 
+              />
             </div>
+
             <div className="form-group">
               <label>Published Date<span className="required">*</span></label>
-              {/* --- UPDATED: Input type to date --- */}
-              <input type="date" value={published} onChange={(e) => setPublished(e.target.value)} required />
+              <input 
+                type="date" 
+                value={published} 
+                onChange={(e) => setPublished(e.target.value)} 
+                required 
+              />
             </div>
             
-            {/* --- NEW: Dynamic Dropdowns --- */}
             <div className="form-group">
               <label>Genre<span className="required">*</span></label>
-              <select value={genreId} onChange={(e) => setGenreId(e.target.value)} required>
-                {/* --- FIXED: Added unique key --- */}
+              <select 
+                value={genreId} 
+                onChange={(e) => setGenreId(e.target.value)} 
+                required
+              >
                 <option key="genre-placeholder" value="">Select Genre...</option>
                 {genres.map(g => (
-                  <option key={g.genreID} value={g.genreID}>{g.Name}</option>
+                  <option key={g.GenreID} value={g.GenreID}>{g.Name}</option>
                 ))}
               </select>
             </div>
+
             <div className="form-group">
               <label>Subgenre<span className="required">*</span></label>
-              <select value={subgenreId} onChange={(e) => setSubgenreId(e.target.value)} required disabled={!genreId}>
-                {/* --- FIXED: Added unique key --- */}
+              <select 
+                value={subgenreId} 
+                onChange={(e) => setSubgenreId(e.target.value)} 
+                required 
+                disabled={!genreId}
+              >
                 <option key="subgenre-placeholder" value="">Select Subgenre...</option>
                 {subGenreOptions.map(sg => (
                   <option key={sg.SubGenreID} value={sg.SubGenreID}>{sg.Name}</option>
                 ))}
               </select>
             </div>
-            {/* --- END NEW --- */}
 
+            {/* --- UPDATED: Source dropdown instead of text input --- */}
             <div className="form-group">
-              <label>Source ID<span className="required">*</span></label>
-              <input type="number" placeholder="e.g., 1 for Hard Copy" value={sourceId} onChange={(e) => setSourceId(e.target.value)} required />
+              <label>Source<span className="required">*</span></label>
+              <select 
+                value={sourceId} 
+                onChange={(e) => setSourceId(e.target.value)} 
+                required
+              >
+                <option key="source-placeholder" value="">Select Source...</option>
+                {sources.map(s => (
+                  <option key={s.Sourceid} value={s.Sourceid}>
+                    {s.SourceName} {s.ExternalLink ? `(${s.ExternalLink})` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
+
             <div className="form-row">
               <div className="form-group">
                 <label>Price<span className="required">*</span></label>
-                <input type="number" step="0.01" placeholder="Price (e.g., 24.99)" value={price} onChange={(e) => setPrice(e.target.value)} required />
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  placeholder="Price (e.g., 24.99)" 
+                  value={price} 
+                  onChange={(e) => setPrice(e.target.value)} 
+                  required 
+                />
               </div>
               <div className="form-group">
                 <label>Quantity<span className="required">*</span></label>
-                <input type="number" placeholder="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
+                <input 
+                  type="number" 
+                  placeholder="Quantity" 
+                  value={quantity} 
+                  onChange={(e) => setQuantity(e.target.value)} 
+                  required 
+                />
               </div>
             </div>
+
             <button type="submit" className="btn-add" disabled={isLoadingAdd}>
               {isLoadingAdd ? "Adding..." : "Add Item"}
             </button>
@@ -410,9 +534,7 @@ const ItemManagement = ({ currentUser }) => {
         {/* --- EDIT/DELETE ITEM FORM --- */}
         <div className="management-section">
           <h2>Edit/Delete Item</h2>
-          {/* --- UPDATED: Converted to a functional form --- */}
           <form onSubmit={handleSearchItem} className="search-box">
-            {/* ... (Error/Success messages for Search) ... */}
             {errorSearch && <div className="error-message">{errorSearch}</div>}
             {successSearch && <div className="success-message">{successSearch}</div>}
 
@@ -429,7 +551,6 @@ const ItemManagement = ({ currentUser }) => {
             </button>
           </form>
 
-          {/* --- UPDATED: Info box now functional --- */}
           {showItemInfo && currentItem && (
             <>
               <div className="user-info">

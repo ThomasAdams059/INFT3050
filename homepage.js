@@ -66,7 +66,7 @@ const HomePage = () => {
             const fictionBooks = allProductsList.filter(p => p.SubGenre === 1 || p.SubGenre === 2 || p.SubGenre === 3);
 
             // Filter for Non-Fiction books subgenreID > 3 to have enough data
-            const nonFictionBooks = allProductsList.filter(p => p.SubGenre > 1);
+            const nonFictionBooks = allProductsList.filter(p => p.SubGenre > 3);
 
             // Create a price lookup map for quick access
             const priceMap = {};

@@ -11,8 +11,8 @@ export default function Author() {
     const fetchAuthorAndStocktakeData = async () => {
       try {
         const baseUrl = "http://localhost:3001/api/inft3050";
-        const productsUrl = `${baseUrl}/Product`; // gets all products to find Authors
-        const stocktakeUrl = `${baseUrl}/Stocktake`;
+        const productsUrl = `${baseUrl}/Product?limit=10000`; // gets all products to find Authors
+        const stocktakeUrl = `${baseUrl}/Stocktake?limit=10000`;
 
         // gets products and stocktake data
         const [productsResponse, stocktakeResponse] = await Promise.all([

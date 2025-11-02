@@ -7,7 +7,7 @@ export default function BestSellers() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const url = "http://localhost:3001/api/inft3050/Stocktake";
+    const url = "http://localhost:3001/api/inft3050/Stocktake?limit=10000";
 
     axios.get(url)
       .then(response => {

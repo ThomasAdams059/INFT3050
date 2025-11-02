@@ -13,8 +13,8 @@ export default function NewReleases() {
       setLoading(true);
       setError(null);
       try {
-        const productUrl = "http://localhost:3001/api/inft3050/Product";
-        const stocktakeUrl = "http://localhost:3001/api/inft3050/Stocktake";
+        const productUrl = "http://localhost:3001/api/inft3050/Product?limit=10000";
+        const stocktakeUrl = "http://localhost:3001/api/inft3050/Stocktake?limit=10000";
 
         const [productResponse, stocktakeResponse] = await Promise.all([
           axios.get(productUrl),

@@ -10,8 +10,8 @@ export default function Genre() {
     const fetchGenreAndStocktakeData = async () => {
       try {
         const baseUrl = "http://localhost:3001/api/inft3050";
-        const genreUrl = `${baseUrl}/Genre`;
-        const stocktakeUrl = `${baseUrl}/Stocktake`;
+        const genreUrl = `${baseUrl}/Genre?limit=10000`;
+        const stocktakeUrl = `${baseUrl}/Stocktake?limit=10000`;
 
         // gets from genre and stocktake in paralellel
         const [genreResponse, stocktakeResponse] = await Promise.all([

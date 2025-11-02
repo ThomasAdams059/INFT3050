@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 
-// updated to use currentUser prop ---
+// updated to use currentUser prop
 const ItemManagement = () => {
   
     const { user } = useSelector((state) => state.auth);

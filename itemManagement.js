@@ -216,7 +216,8 @@ const handleAddItem = (event) => {
     });
 };
 
-  // handles searching of items
+  // handles searching of items ----- updated to use limit = 10000 like other pages
+  // got rid of recurisve function didnt work 
 const handleSearchItem = (event) => {
   event.preventDefault();
   setIsLoadingSearch(true);
@@ -228,79 +229,50 @@ const handleSearchItem = (event) => {
 
   console.log(`Searching for: "${searchItemName}"`);
 
-  //recurisve function to get multiple pages and not just first 25 items
-  const fetchProductsUntilFound = (page = 1, accumulatedProducts = []) => {
-    console.log(`Fetching page ${page}...`);
-    
-    return axios.get(`${productBaseUrl}?page=${page}`, { withCredentials: true })
-      .then((response) => {
-        const productsThisPage = response.data.list || [];
-        const allProducts = [...accumulatedProducts, ...productsThisPage];
-        
-        console.log(`Page ${page}: ${productsThisPage.length} products`);
-        console.log(`Total accumulated: ${allProducts.length} products`);
-        
-        // find product in what was recovered from database
-        const foundProduct = allProducts.find(
-          p => p.Name.toLowerCase() === searchItemName.toLowerCase()
-        );
-        
-        if (foundProduct) {
-          console.log(`FOUND IT! Product: "${foundProduct.Name}" (ID: ${foundProduct.ID})`);
-          return { product: foundProduct };
-        }
-        
-        // pagination info
-        const pageInfo = response.data.pageInfo;
-        console.log(`Page ${pageInfo.page} of ~${Math.ceil(pageInfo.totalRows / pageInfo.pageSize)}`);
-        
-        // until exceeded limit
-        if (!pageInfo.isLastPage && page < 20) {
-          console.log(`Not found yet, fetching next page...`);
-          // recursive search next page
-          return fetchProductsUntilFound(page + 1, allProducts);
-        } else {
-          console.log(`Product not found after searching ${allProducts.length} products`);
-          return { product: null };
-        }
-      });
-  };
+  // limit parameter to get all products
+  const allProductsUrl = `${productBaseUrl}?limit=10000`;
+  const allStocktakeUrl = `${stocktakeBaseUrl}?limit=10000`;
 
-  // recursive search
-  fetchProductsUntilFound()
-    .then((result) => {
-      if (!result.product) {
+  // new method to run stuff in parallel and wait for all to finish before moving forward
+  // if it fails goes to catch()
+  Promise.all([
+    axios.get(allProductsUrl, { withCredentials: true }),
+    axios.get(allStocktakeUrl, { withCredentials: true })
+  ])
+    .then(([productResponse, stocktakeResponse]) => {
+      const allProducts = productResponse.data.list || [];
+      const allStocktake = stocktakeResponse.data.list || [];
+      
+      console.log(`Loaded ${allProducts.length} total products for search`);
+      console.log(`Loaded ${allStocktake.length} stocktake items`);
+      
+      // search for product with exact name but case sensitive
+      const foundProduct = allProducts.find(
+        p => p.Name.toLowerCase() === searchItemName.toLowerCase()
+      );
+      
+      if (!foundProduct) {
+        console.log(`Product "${searchItemName}" not found in database.`);
         setErrorSearch(`Product "${searchItemName}" not found in database.`);
         setIsLoadingSearch(false);
         return null;
       }
       
-      setCurrentItem(result.product);
+      console.log(`FOUND IT! Product: "${foundProduct.Name}" (ID: ${foundProduct.ID})`);
+      setCurrentItem(foundProduct);
 
-      // gets stocktake for this product
-      return axios.get(stocktakeBaseUrl, { withCredentials: true })
-        .then((stocktakeResponse) => {
-          return { product: result.product, stocktakeResponse };
-        });
-    })
-    .then((result) => {
-      if (!result) return;
-      
-      const { product, stocktakeResponse } = result;
-      
-      console.log("Stocktake data:", stocktakeResponse.data);
-      
-      const entries = (stocktakeResponse.data.list || [])
-        .filter(s => s.ProductId === product.ID)
+      // filter stock entries
+      const entries = allStocktake
+        .filter(s => s.ProductId === foundProduct.ID)
         .map(entry => ({
           ...entry,
           Source: entry.Source || { SourceName: `Source ID ${entry.SourceId}` }
         }));
         
-      console.log(`Found ${entries.length} stocktake entries`);
+      console.log(`Found ${entries.length} stocktake entries for this product`);
       
       setStocktakeEntries(entries);
-      setSuccessSearch(`Found product ID: ${product.ID}`);
+      setSuccessSearch(`Found product ID: ${foundProduct.ID}`);
       setShowItemInfo(true);
       setIsLoadingSearch(false);
     })

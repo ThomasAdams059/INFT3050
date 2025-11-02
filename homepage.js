@@ -34,26 +34,30 @@ const HomePage = () => {
 
     const [nonFiction, setNonFiction] = useState([]);
     const [fiction, setFiction] = useState([]);
-    const [movies, setMovies] = useState([]);
-    const [games, setGames] = useState([]);
+    // const [movies, setMovies] = useState([]); // This state was unused
+    // const [games, setGames] = useState([]); // This state was unused
     const [genres, setGenres] = useState([]);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
     useEffect(() => {
-    const fetchAllProducts = async () => {
-        const url = "http://localhost:3001/api/inft3050";
-        const productsUrl = `${url}/Product`;
-        const genreUrl = `${url}/Genre`;
-        const stocktakeUrl = `${url}/Stocktake`;
+      const fetchAllProducts = async () => {
+          // --- FIX: Corrected variable declarations and added backticks (`) ---
+          const url = "http://localhost:3001/api/inft3050";
+          const productsUrl = `${url}/Product?limit=10000`; // Add limit parameter
+          const genreUrl = `${url}/Genre?limit=10000`;
+          const stocktakeUrl = `${url}/Stocktake?limit=10000`;
+          // --- END FIX ---
         
         try {
-              const [allProductsResponse, stocktakeResponse, genreResponse] = await Promise.all([
-              axios.get(productsUrl),
-              axios.get(stocktakeUrl),
-              axios.get(genreUrl)
-            ]);
+          // --- FIX: Added withCredentials: true ---
+          const [allProductsResponse, stocktakeResponse, genreResponse] = await Promise.all([
+              axios.get(productsUrl, { withCredentials: true }),
+              axios.get(stocktakeUrl, { withCredentials: true }),
+              axios.get(genreUrl, { withCredentials: true })
+          ]);
+          // --- END FIX ---
             
             const allProductsList = allProductsResponse.data.list;
             const stocktakeList = stocktakeResponse.data.list;
@@ -70,7 +74,7 @@ const HomePage = () => {
             stocktakeList.forEach(item => {
             if(item.SourceId === 1) // Ensure we only consider items from SourceId 1 (Hard Copy Books)
               priceMap[item.ProductId] = item.Price;
-        });
+            });
 
             // Add price to each book
             fictionBooks.forEach(book => {
@@ -80,7 +84,7 @@ const HomePage = () => {
               book.price = priceMap[book.ID] ? `$${priceMap[book.ID].toFixed(2)}` : 'Price N/A';
             });
             
-                // Restructure the genre data and add prices from the lookup map
+            // Restructure the genre data and add prices from the lookup map
             const restructuredGenres = genresList.map(genre => ({
               id: genre.GenreID,
               name: genre.Name,
@@ -101,7 +105,7 @@ const HomePage = () => {
             setFiction(fictionBooks);
             setNonFiction(nonFictionBooks);
             setLoading(false);
-        } catch (err) {
+            } catch (err) {
             console.error("Error fetching product data:", err);
             setError("Failed to load product data.");
             setLoading(false);

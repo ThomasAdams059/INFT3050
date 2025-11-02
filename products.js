@@ -41,14 +41,19 @@ const ProductPage = ({ onAddToCart }) => {
       setSelectedPrice(null);
 
       const baseUrl = "http://localhost:3001/api/inft3050";
-      const allProductsUrl = `${baseUrl}/Product`;
-      const stocktakeUrl = `${baseUrl}/Stocktake`;
+      
+      // --- FIX: Add limit=10000 to fetch ALL items ---
+      const allProductsUrl = `${baseUrl}/Product?limit=10000`;
+      const stocktakeUrl = `${baseUrl}/Stocktake?limit=10000`;
+      // --- END FIX ---
 
       try {
+        // --- FIX: Add withCredentials: true ---
         const [allProductsResponse, stocktakeResponse] = await Promise.all([
-          axios.get(allProductsUrl),
-          axios.get(stocktakeUrl) // Fetch the full stocktake list
+          axios.get(allProductsUrl, { withCredentials: true }),
+          axios.get(stocktakeUrl, { withCredentials: true }) // Fetch the full stocktake list
         ]);
+        // --- END FIX ---
         
         const allProductsList = allProductsResponse.data.list;
         const stocktakeList = stocktakeResponse.data.list;
@@ -73,11 +78,12 @@ const ProductPage = ({ onAddToCart }) => {
         setAvailableSources(allSourcesForProduct);
 
         if (allSourcesForProduct.length > 0) {
+          // Default to the first available source
           setSelectedStockItemId(allSourcesForProduct[0].itemId);
           setSelectedPrice(allSourcesForProduct[0].price);
           mainProduct.Price = allSourcesForProduct[0].price; 
         } else {
-          mainProduct.Price = null; 
+          mainProduct.Price = null; // No purchase options
         }
         // --- END Source Logic ---
 
@@ -86,16 +92,21 @@ const ProductPage = ({ onAddToCart }) => {
         // Other titles logic (Unchanged)
         if (mainProduct.Author) {
           const authorProducts = allProductsList.filter(
-            p => p.Author === mainProduct.Author && p.ID !== mainProduct.ID
+            p => p.Author === mainProduct.Author && p.ID.toString() !== productId
           );
+          
+          // --- FIX: Correctly find price for "other titles" ---
           const otherTitlesWithPrices = authorProducts.map(p => {
-            const otherStock = stocktakeList.find(item => item.ProductId === p.ID && item.SourceId === 1);
+            // Find the cheapest stock item for this other product
+            const otherStock = stocktakeList.find(item => item.ProductId === p.ID);
             return {
               id: p.ID, name: p.Name,
               image: "https://placehold.co/200x300/F4F4F5/18181B?text=Book",
               price: otherStock ? `$${otherStock.Price.toFixed(2)}` : 'N/A'
             };
           }).slice(0, 7);
+          // --- END FIX ---
+          
           setOtherTitles(otherTitlesWithPrices);
         }
       } catch (err) {
@@ -118,7 +129,7 @@ const ProductPage = ({ onAddToCart }) => {
       setSelectedPrice(selectedSource.price);
       setProductData(prevData => ({
         ...prevData,
-        Price: selectedSource.price
+        Price: selectedSource.price // Update price on main product data
       }));
     }
   };
@@ -143,6 +154,12 @@ const handleAddToOrderClick = async () => {
     if (!selectedSource) {
         throw new Error("Selected source not found.");
     }
+    
+    if (selectedSource.quantity === 0) {
+       alert("This item is out of stock.");
+       setIsSubmittingOrder(false);
+       return;
+    }
 
     const itemToAdd = {
       id: productData.ID,
@@ -156,8 +173,6 @@ const handleAddToOrderClick = async () => {
 
     // Call the onAddToCart function passed from App.js
     onAddToCart(itemToAdd);
-
-    alert(`${productData.Name} (${selectedSource.sourceName}) has been added to your cart!`);
 
   } catch (error) {
     console.error("Error adding to cart:", error);

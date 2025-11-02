@@ -25,12 +25,13 @@ const SearchResults = () => {
             const normalizedQuery = query.toLowerCase().replace(/\s/g, '');
 
             try {
-                // --- UPDATED: Fetch Product, Stocktake, AND Genre ---
-                const [productResponse, stocktakeResponse, genreResponse] = await Promise.all([
-                  axios.get(`${API_BASE_URL}/Product`, { withCredentials: true }),
-                  axios.get(`${API_BASE_URL}/Stocktake`, { withCredentials: true }),
-                  axios.get(`${API_BASE_URL}/Genre`, { withCredentials: true }) // <-- NEW
-                ]);
+                  // --- FIX: Added backticks (`) for template literals ---
+                  const [productResponse, stocktakeResponse, genreResponse] = await Promise.all([
+                      axios.get(`${API_BASE_URL}/Product?limit=10000`, { withCredentials: true }),
+                      axios.get(`${API_BASE_URL}/Stocktake?limit=10000`, { withCredentials: true }),
+                      axios.get(`${API_BASE_URL}/Genre?limit=10000`, { withCredentials: true })
+                  ]);
+                  // --- END FIX ---
                 
                 const allProducts = productResponse.data.list || [];
                 const stocktakeList = stocktakeResponse.data.list || [];
@@ -75,8 +76,8 @@ const SearchResults = () => {
                 
             } catch (error) {
                 console.error("Error fetching search results:", error);
-                // Handle error (e.g., show an error message)
             } finally {
+                // --- NEW: Set loading to false in a finally block ---
                 setLoading(false);
             }
         };

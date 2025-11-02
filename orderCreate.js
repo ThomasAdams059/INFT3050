@@ -2,34 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 
-// --- UPDATED: Use absolute URL to avoid proxy issues ---
 const API_BASE_URL = "http://localhost:3001/api/inft3050";
 
 const OrderCreate = ({ cartItems, onOrderSuccess }) => {
-  // Get user from Redux store
+  // gets user from redux
   const { user } = useSelector((state) => state.auth);
 
-  // Shipping Address State
+ 
   const [street, setStreet] = useState("");
   const [suburb, setSuburb] = useState("");
   const [postcode, setPostcode] = useState("");
   const [state, setState] = useState("NSW");
   
-  // --- NEW: Payment Details State (required for 'TO' table) ---
+  // -payment details state for TO table
   const [cardOwner, setCardOwner] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCVV, setCardCVV] = useState("");
-  // --- END NEW ---
 
-  // const [savedAddresses, setSavedAddresses] = useState([]); // --- REMOVED ---
+
+ 
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
   const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-  // --- UPDATED: Fetch last order address ---
+  // gets last order address
+
+
+
   useEffect(() => {
     if (!user) {
       setLoading(false);
@@ -39,7 +41,7 @@ const OrderCreate = ({ cartItems, onOrderSuccess }) => {
     const fetchLastOrderAddress = async () => {
       try {
         setLoading(true);
-        // 1. Fetch all orders
+        // gets all orders
         const response = await axios.get(
           `${API_BASE_URL}/Orders`, 
           { withCredentials: true }
@@ -47,25 +49,25 @@ const OrderCreate = ({ cartItems, onOrderSuccess }) => {
         
         const allOrders = response.data.list || [];
 
-        // 2. Filter for this patron
+       
         const patronOrders = allOrders.filter(order => 
           order.TO && order.TO.PatronId === user.UserID
         );
         
-        // 3. Sort by date to find the most recent
+        // finds most recent
         patronOrders.sort((a, b) => new Date(b.OrderDate) - new Date(a.OrderDate));
 
         if (patronOrders.length > 0) {
-          // 4. Pre-fill with the most recent order
+          // pre fills most recent order
           const lastOrder = patronOrders[0];
           
-          // Use the Order's shipping address
+          // use Order shipping address
           setStreet(lastOrder.StreetAddress || "");
           setSuburb(lastOrder.Suburb || "");
           setPostcode(lastOrder.PostCode || "");
           setState(lastOrder.State || "NSW"); 
           
-          // Use the 'TO' record's payment details
+          // use payment details from TO
           if (lastOrder.TO) {
             setCardOwner(lastOrder.TO.CardOwner || "");
             setCardNumber(lastOrder.TO.CardNumber || "");
@@ -83,11 +85,9 @@ const OrderCreate = ({ cartItems, onOrderSuccess }) => {
 
     fetchLastOrderAddress();
   }, [user]);
-  // --- END UPDATED LOGIC ---
 
-  // --- REMOVED: handleUseAddress (no longer needed) ---
 
-  // --- 3-Step Order Placement (Unchanged, but WILL FAIL with 401) ---
+  // order place handler
   const handlePlaceOrder = async (event) => {
     event.preventDefault();
     
@@ -105,10 +105,10 @@ const OrderCreate = ({ cartItems, onOrderSuccess }) => {
     setError(null);
 
     try {
-      // --- STEP 1: Create the 'TO' (Customer Info) record ---
+      // creates TO customer info table
       const toPayload = {
-        PatronId: user.UserID, // Link to the Patrons table
-        Email: user.Email,     // From patron record
+        PatronId: user.UserID, // link to patron table
+        Email: user.Email,     
         StreetAddress: street,
         PostCode: postcode,
         Suburb: suburb,
@@ -127,9 +127,9 @@ const OrderCreate = ({ cartItems, onOrderSuccess }) => {
       
       const newCustomerId = toResponse.data.customerID;
       
-      // --- STEP 2: Create the 'Orders' record ---
+      // create order record
       const orderPayload = {
-        Customer: newCustomerId, // Use the ID from Step 1
+        Customer: newCustomerId, 
         StreetAddress: street,
         Suburb: suburb,
         PostCode: postcode,
@@ -144,14 +144,14 @@ const OrderCreate = ({ cartItems, onOrderSuccess }) => {
 
       const newOrderId = orderResponse.data.OrderID;
 
-      // --- STEP 3: Create 'ProductsInOrders' for each cart item ---
+      // creates ProductsInOrder for each cart item
       const productsInOrdersPayloads = cartItems.map(item => ({
         OrderId: newOrderId,
-        ProduktId: item.stockItemId, // This is the 'ItemId' from Stocktake
+        ProduktId: item.stockItemId, // itemID from stocktake table
         Quantity: item.quantity
       }));
 
-      // Execute all item posts in parallel
+      // executes all item posts in parallel
       await Promise.all(
         productsInOrdersPayloads.map(payload => 
           axios.post(
@@ -164,12 +164,14 @@ const OrderCreate = ({ cartItems, onOrderSuccess }) => {
 
       // --- Success ---
       if (onOrderSuccess) {
-        onOrderSuccess(); // Clear the cart in App.js
+        onOrderSuccess(); // clears the cart
       }
 
       alert(`Order ${newOrderId} successfully created! You will now be redirected to Order History.`);
       window.location.href = '/orderHistory';
 
+
+      // error logs remove later
     } catch (err) {
       console.error("Error creating order:", err.response || err);
       let errorMsg = 'Failed to place order.';
@@ -187,7 +189,7 @@ const OrderCreate = ({ cartItems, onOrderSuccess }) => {
       setIsSubmitting(false);
     }
   };
-  // --- END 3-Step Logic ---
+  
 
   if (loading) {
     return <div className="main-container"><p>Loading checkout...</p></div>;
@@ -201,7 +203,7 @@ const OrderCreate = ({ cartItems, onOrderSuccess }) => {
     <div className="main-container">
       <h1 className="main-heading custom-header-color">Confirm Your Order</h1>
       <div className="management-grid">
-        {/* --- Shipping & Payment Form --- */}
+        {/* shipping form */}
         <div className="management-section">
           <h2 className="admin-box-heading">Shipping & Payment</h2>
           <form onSubmit={handlePlaceOrder} id="shipping-form">
@@ -236,7 +238,7 @@ const OrderCreate = ({ cartItems, onOrderSuccess }) => {
 
             <hr style={{ margin: '20px 0' }} />
 
-            {/* --- Payment Form Fields --- */}
+            {/* payment form here */}
             <h3 style={{ fontSize: '1.1em', marginBottom: '10px' }}>Payment Details</h3>
              <div className="form-group">
               <label>Name on Card*</label>
@@ -257,12 +259,12 @@ const OrderCreate = ({ cartItems, onOrderSuccess }) => {
               </div>
             </div>
 
-            {/* --- REMOVED "Saved Address" section --- */}
+          
             
           </form>
         </div>
 
-        {/* --- Order Summary (Unchanged) --- */}
+        {/* order summary */}
         <div className="management-section">
           <h2 className="admin-box-heading">Order Summary</h2>
           <div className="cart-items-container" style={{ padding: '10px 0' }}>

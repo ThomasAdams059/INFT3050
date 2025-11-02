@@ -3,6 +3,7 @@ import axios from 'axios';
 const API_PREFIX_SHORT = "http://localhost:3001";
 const API_PREFIX_LONG = API_PREFIX_SHORT + "/api/inft3050";
 
+// folowing lab and added comments to make clear 
 // SHA256 password hashing
 async function sha256(message) {
   // encode as UTF-8
@@ -23,7 +24,7 @@ const generateSalt = () => {
   return salt;
 };
 
-/* Axios database calls */
+
 // Login user
 const tryLoginUser = (username, password, setResult) => {
   const headers = {
@@ -42,7 +43,7 @@ const tryLoginUser = (username, password, setResult) => {
     console.log("response.data.isAdmin:", response.data.isAdmin);
     console.log("Type of response.data.isAdmin:", typeof response.data.isAdmin);
 
-    // Check for isAdmin in different possible formats
+    // check for isAdmin in different possible formats
     const isAdmin = response.data.isAdmin === true || 
                     response.data.isAdmin === 'true' ||
                     response.data.isAdmin === 1;
@@ -182,7 +183,7 @@ const tryAddNewUser = async (fullName, email, password, address, postcode, state
     IsAdmin: "false",
     Salt: salt,
     HashPW: hashedPW,
-    Name: fullName // Using FullName as Name
+    Name: fullName // FullName as Name
   };
 
   axios.post(API_PREFIX_LONG + "/User", newCredentials, {

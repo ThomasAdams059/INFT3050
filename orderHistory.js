@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useSelector } from 'react-redux'; // --- 1. IMPORT useSelector ---
+import { useSelector } from 'react-redux'; 
 
 // API URLs
 const ORDERS_URL = "http://localhost:3001/api/inft3050/Orders";
 const STOCKTAKE_URL = "http://localhost:3001/api/inft3050/Stocktake";
 const PRODUCT_URL = "http://localhost:3001/api/inft3050/Product";
 
-// --- Sub-Component (OrderDetails) ---
-// This component fetches the details for the items in a specific order
+
 const OrderDetails = ({ stockItems }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,14 +31,14 @@ const OrderDetails = ({ stockItems }) => {
                  console.warn("Item in Stocktake List is missing ItemId:", item);
                  return null;
               }
-              // 1. Get Stocktake item to find ProductId and Price
+              // gets stocktake item to get product id and price
               const stocktakeResponse = await axios.get(
                 `${STOCKTAKE_URL}/${item.ItemId}`,
                 { withCredentials: true }
               );
               const stockItem = stocktakeResponse.data;
 
-              // 2. Get Product item to find Name
+              // gets product item to find name
               const productResponse = await axios.get(
                 `${PRODUCT_URL}/${stockItem.ProductId}`,
                 { withCredentials: true }
@@ -50,7 +49,7 @@ const OrderDetails = ({ stockItems }) => {
                 id: item.ItemId,
                 name: productDetails.Name,
                 price: stockItem.Price,
-                quantity: 1, // Each item in the list represents quantity 1
+                quantity: 1, // items in the list represents quantity 1
               };
             } catch (detailError) {
               console.error(`Error fetching details for item ${item.ItemId}:`, detailError);
@@ -58,7 +57,7 @@ const OrderDetails = ({ stockItems }) => {
             }
           })
         );
-        // Group identical items
+        
         const groupedItems = {};
         detailedItems.filter(item => item !== null).forEach(item => {
             if (groupedItems[item.id]) {
@@ -78,7 +77,7 @@ const OrderDetails = ({ stockItems }) => {
     };
 
     fetchDetails();
-  }, [stockItems]); // Re-run if stockItems prop changes
+  }, [stockItems]); // Rruns again if stockItems prop changes
 
   if (loading) return <p style={{ paddingLeft: '20px' }}>Loading order items...</p>;
   if (error) return <p className="error-message" style={{ color: 'red', paddingLeft: '20px' }}>{error}</p>;
@@ -101,15 +100,17 @@ const OrderDetails = ({ stockItems }) => {
   );
 };
 
-// --- NEW: Date Formatting Function ---
+
 const formatDate = (dateString) => {
+
+
     if (!dateString) return 'No Date Provided';
     const date = new Date(dateString);
-    // Check if the date is valid
+    
     if (isNaN(date.getTime())) {
-        return 'Invalid Date'; // This was the bug
+        return 'Invalid Date'; 
     }
-    // Format to a readable string
+    // formatting to readable
     return date.toLocaleString('en-AU', {
         year: 'numeric',
         month: 'long',
@@ -119,20 +120,18 @@ const formatDate = (dateString) => {
     });
 };
 
-// --- Main OrderHistory Component ---
 const OrderHistory = () => {
     
-    // --- GET user FROM REDUX STORE ---
     const { user } = useSelector((state) => state.auth);
 
-    // State for fetching and displaying orders
+    // getting and displaying error states
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null); // For success messages
     const [selectedOrderId, setSelectedOrderId] = useState(null);
 
-    // --- State for editing an order ---
+    // editing order states
     const [isEditing, setIsEditing] = useState(false);
     const [editingOrder, setEditingOrder] = useState(null);
     const [street, setStreet] = useState("");
@@ -141,16 +140,17 @@ const OrderHistory = () => {
     const [orderState, setOrderState] = useState("NSW");
     // ---
 
-    // Fetch orders when the 'user' from Redux is available
+    // gets orders when user from redux is available
+
     useEffect(() => {
-        // --- CHECK REDUX user ---
+     
         if (!user) {
             setLoading(false);
             setError("Please log in to view your order history.");
             return;
         }
         
-        // --- NEW: Clear error if user is now loaded ---
+        
         setError(null);
 
         const fetchOrders = async () => {
@@ -159,12 +159,12 @@ const OrderHistory = () => {
                 const response = await axios.get(ORDERS_URL, { withCredentials: true });
                 const allOrders = response.data.list || [];
                 
-                // --- FIX: Filter by order.TO.PatronId === user.UserID ---
+                // filter by order.TO.PatronId 
                 const userOrders = allOrders.filter(order => 
                     order.TO && order.TO.PatronId === user.UserID
                 );
                 
-                // Sort by date, newest first
+                // sort newest first
                 userOrders.sort((a, b) => new Date(b.OrderDate) - new Date(a.OrderDate));
                 
                 setOrders(userOrders);
@@ -181,15 +181,14 @@ const OrderHistory = () => {
         };
 
         fetchOrders();
-    }, [user]); // --- SET DEPENDENCY to user from Redux ---
+    }, [user]); // set dependency to user from redux
 
 
-    // --- Sidebar and Navigation Logic ---
+    // side bar and navigation 
     const navigate = (path) => {
         window.location.href = path;
     };
-    
-    // --- REMOVED handleAddressBookClick ---
+   
 
     const sidebarLinks = [
         { name: 'Account Dashboard', path: '/myAccount' },
@@ -199,13 +198,13 @@ const OrderHistory = () => {
     
     const handleViewDetailsClick = (orderId) => {
         if (selectedOrderId === orderId) {
-            setSelectedOrderId(null); // Close if already open
+            setSelectedOrderId(null); // close if already open
         } else {
-            setSelectedOrderId(orderId); // Open selected order
+            setSelectedOrderId(orderId); // opens selected order
         }
     };
 
-    // --- Handle opening the edit modal ---
+    // handles opening the edit
     const handleEditClick = (order) => {
         setEditingOrder(order);
         setStreet(order.StreetAddress);
@@ -217,7 +216,7 @@ const OrderHistory = () => {
         setSuccess(null);
     };
 
-    // --- Handle closing the edit modal ---
+    // handles closing edit
     const handleCancelEdit = () => {
         setIsEditing(false);
         setEditingOrder(null);
@@ -225,7 +224,7 @@ const OrderHistory = () => {
         setSuccess(null);
     };
 
-    // --- Handle submitting the address update ---
+    // handles submitting the updated address
     const handleUpdateOrder = async (event) => {
         event.preventDefault();
         setError(null);
@@ -247,7 +246,7 @@ const OrderHistory = () => {
                 { withCredentials: true }
             );
 
-            // Update the order in the local state to reflect the change immediately
+            // updates the order in the local state to reflect the change immediately
             setOrders(prevOrders =>
                 prevOrders.map(order =>
                     order.OrderID === editingOrder.OrderID ? { ...order, ...payload } : order
@@ -255,7 +254,7 @@ const OrderHistory = () => {
             );
             
             setSuccess("Address updated successfully!");
-            handleCancelEdit(); // Close the modal
+            handleCancelEdit(); // close
 
         } catch (err) {
             console.error("Error updating order:", err.response || err);
@@ -263,7 +262,7 @@ const OrderHistory = () => {
         }
     };
 
-    // --- STYLING for buttons ---
+  
     const smallButtonStyle = {
         padding: '5px 12px',
         fontSize: '0.9em',
@@ -271,15 +270,15 @@ const OrderHistory = () => {
         borderRadius: '5px',
         cursor: 'pointer',
         color: 'white',
-        background: '#495867', // Main theme color
+        background: '#495867', 
     };
 
     const editButtonStyle = {
         ...smallButtonStyle,
-        background: '#ffc107', // Yellow for "Edit"
+        background: '#ffc107', 
         color: '#212529',
     };
-    // --- END STYLING ---
+ 
 
 
     return (
@@ -287,7 +286,7 @@ const OrderHistory = () => {
             <h1 className="main-heading custom-header-color">Order History</h1>
 
             <div className="three-column-layout" style={{ gridTemplateColumns: '250px 1fr', gap: '30px' }}>
-                {/* --- Sidebar (Updated) --- */}
+                {/* side bar */}
                 <div className="account-sidebar">
                     <h2 className="admin-box-heading">My Account</h2>
                     <ul className="sidebar-nav-list">
@@ -305,7 +304,7 @@ const OrderHistory = () => {
                     </ul>
                 </div> 
 
-                {/* --- Main Order History Box --- */}
+                {/* order history box */}
                 <div className="orderHistory-box" style={{ height: 'auto', minHeight: '400px', gridColumn: 'span 1' }}>
                     <h2 className="admin-box-heading">Your Orders</h2>
                     
@@ -319,7 +318,7 @@ const OrderHistory = () => {
                             orders.map(order => (
                                 <div key={order.OrderID} className="list-item-row" style={{ borderBottom: '1px solid #eee', padding: '15px', marginBottom: '10px', background: '#fff', borderRadius: '5px' }}>
                                     
-                                    {/* --- STYLING UPDATE --- */}
+                                  
                                     <p style={{margin: '0 0 5px 0'}}><strong>Order ID:</strong> {order.OrderID}</p>
                                     <p style={{margin: '0 0 5px 0'}}>
                                         <strong>Order Date:</strong> {formatDate(order.OrderDate)}
@@ -331,10 +330,7 @@ const OrderHistory = () => {
                                         : 'N/A'
                                         }
                                     </p>
-                                    {/* --- END STYLING UPDATE --- */}
-
-                                    
-                                    {/* --- Button row (STYLED) --- */}
+                               
                                     <div style={{display: 'flex', gap: '10px', marginTop: '10px'}}>
                                         <button 
                                           style={smallButtonStyle}
@@ -363,11 +359,11 @@ const OrderHistory = () => {
                     </div>
                 </div> 
 
-                {/* --- DELETED: Address Book Box --- */}
+               
                 
             </div>
 
-            {/* --- Edit Order Modal (Unchanged) --- */}
+            
             {isEditing && editingOrder && (
                 <div className="modal-backdrop" style={{
                     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -418,11 +414,10 @@ const OrderHistory = () => {
                     </div>
                 </div>
             )}
-            {/* --- END MODAL --- */}
+            
 
         </div>
     );
 };
 
 export default OrderHistory;
-

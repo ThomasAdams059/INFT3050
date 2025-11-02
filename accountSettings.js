@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useSelector, useDispatch } from 'react-redux'; // Import hooks
-import { updateUser } from './redux/authSlice'; // Import the new action
+import { useSelector, useDispatch } from 'react-redux'; 
+import { updateUser } from './redux/authSlice'; 
 
 // API URL
 const PATRONS_URL = "http://localhost:3001/api/inft3050/Patrons";
 
-// --- Password Hashing Functions (copied from authSlice) ---
+// password hashing same as userhelper
 async function sha256(message) {
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -21,26 +21,26 @@ const generateSalt = () => {
 };
 // ---
 
-// --- REMOVED currentUser PROP ---
+
 const AccountSettings = () => {
   
-  // --- Get user data from Redux ---
+  // gets user data from redux
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
-  // --- Form States ---
+ 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
-  // --- UI State ---
+  
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Populate form with user data when component loads
+  // form shows user data
   useEffect(() => {
     if (user) {
       setFullName(user.Name || "");
@@ -48,7 +48,7 @@ const AccountSettings = () => {
     }
   }, [user]);
 
-  // --- Handle Account Detail Update (Name/Email) ---
+  // account details update
   const handleUpdateDetails = async (event) => {
     event.preventDefault();
     setIsLoading(true);
@@ -73,7 +73,7 @@ const AccountSettings = () => {
         { withCredentials: true }
       );
 
-      // Update Redux state
+      // updates redux state
       dispatch(updateUser(response.data));
       setSuccessMessage("Account details updated successfully!");
 
@@ -85,7 +85,7 @@ const AccountSettings = () => {
     }
   };
 
-  // --- Handle Password Update ---
+  // -handles the password update
   const handleUpdatePassword = async (event) => {
     event.preventDefault();
     setIsLoading(true);
@@ -104,7 +104,7 @@ const AccountSettings = () => {
       return;
     }
 
-    // 1. Verify current password
+    // verify current password
     const currentHash = await sha256(user.Salt + currentPassword);
     if (currentHash !== user.HashPW) {
       setErrorMessage("Your current password does not match.");
@@ -112,7 +112,7 @@ const AccountSettings = () => {
       return;
     }
 
-    // 2. Create new salt and hash
+    
     const newSalt = generateSalt();
     const newHash = await sha256(newSalt + newPassword);
 
@@ -128,11 +128,11 @@ const AccountSettings = () => {
         { withCredentials: true }
       );
 
-      // Update Redux state with the new user object
+      // updated redux state
       dispatch(updateUser(response.data));
       setSuccessMessage("Password updated successfully!");
       
-      // Clear password fields
+      // clears passowrd
       setCurrentPassword("");
       setNewPassword("");
 
@@ -144,27 +144,27 @@ const AccountSettings = () => {
     }
   };
 
-  // --- Sidebar and Navigation Logic ---
+  // for the side bar routing and logic
   const navigate = (path) => {
     window.location.href = path;
   };
 
-  // --- UPDATED: Removed 'Address Book' ---
+  // removed gthe address book now
   const sidebarLinks = [
     { name: 'Account Dashboard', path: '/myAccount' },
     { name: 'Order History', path: '/orderHistory' },
     { name: 'Account Settings', path: '/accountSettings' },
   ];
 
-  // --- Render ---
+ 
   return (
     <div className="main-container">
       <h1 className="main-heading custom-header-color">Account Settings</h1>
 
-      {/* --- MODIFIED: Use 2-column layout --- */}
+      {/* added so there are 2 columns to match wireframes */}
       <div className="three-column-layout" style={{ gridTemplateColumns: '250px 1fr', gap: '30px' }}>
         
-        {/* --- Sidebar (Unchanged) --- */}
+        {/* sidebar */}
         <div className="account-sidebar">
           <h2 className="admin-box-heading">My Account</h2>
           <ul className="sidebar-nav-list">
@@ -182,14 +182,14 @@ const AccountSettings = () => {
           </ul>
         </div>
 
-        {/* --- Main Content Area --- */}
+        
         <div className="account-settings-content" style={{ gridColumn: 'span 1' }}>
 
-          {/* --- Global Messages --- */}
+          {/* feedback messsages */}
           {errorMessage && <p className="error-message" style={{ color: 'red', textAlign: 'center' }}>{errorMessage}</p>}
           {successMessage && <p className="success-message" style={{ color: 'green', textAlign: 'center' }}>{successMessage}</p>}
 
-          {/* --- Form 1: Edit Account Details --- */}
+          {/* edit account details form */}
           <div className='threeColumns-account-container' style={{ marginBottom: '30px' }}>
             <form onSubmit={handleUpdateDetails}>
               <div className="account-header">
@@ -216,7 +216,7 @@ const AccountSettings = () => {
             </form>
           </div>
 
-          {/* --- Form 2: Change Password --- */}
+          {/* change password form */}
           <div className='threeColumns-account-container'>
             <form onSubmit={handleUpdatePassword}>
               <div className="account-header">
@@ -244,7 +244,7 @@ const AccountSettings = () => {
           </div>
 
         </div>
-        {/* --- End Main Content Area --- */}
+       
 
       </div>
     </div>
@@ -252,4 +252,3 @@ const AccountSettings = () => {
 }
 
 export default AccountSettings;
-

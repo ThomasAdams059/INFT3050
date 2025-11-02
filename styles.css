@@ -1376,7 +1376,7 @@ button {
   font-weight: 600;
 }
 
-/* Search Input in Edit/Delete Section */
+/* search input */
 .search-box {
   margin-bottom: 20px;
 }
@@ -1404,7 +1404,7 @@ button {
   box-shadow: 0 0 5px rgba(74, 144, 226, 0.3);
 }
 
-/* Responsive Design */
+/* responsive */
 @media (max-width: 968px) {
   .management-grid {
     grid-template-columns: 1fr;

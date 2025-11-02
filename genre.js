@@ -13,8 +13,7 @@ export default function Genre() {
         const genreUrl = `${baseUrl}/Genre`;
         const stocktakeUrl = `${baseUrl}/Stocktake`;
 
-        // Use Promise.all to fetch data from both endpoints in parallel
-        // --- FIXED: Added { withCredentials: true } to both requests ---
+        // gets from genre and stocktake in paralellel
         const [genreResponse, stocktakeResponse] = await Promise.all([
           axios.get(genreUrl, { withCredentials: true }),
           axios.get(stocktakeUrl, { withCredentials: true })
@@ -23,16 +22,16 @@ export default function Genre() {
         const genresList = genreResponse.data.list;
         const stocktakeList = stocktakeResponse.data.list;
 
-        // Create a price lookup map for quick access
+        // price lookup map for quick access
         const priceMap = {};
         stocktakeList.forEach(item => {
-          // Find *a* price (preferring SourceId 1)
+          // finds a price and preferring source id 1
           if (item.Price && (!priceMap[item.ProductId] || item.SourceId === 1)) {
             priceMap[item.ProductId] = item.Price;
           }
         });
 
-        // Restructure the genre data and add prices from the lookup map
+        // restructured the genre data and add prices from the lookup map
         const restructuredGenres = genresList.map(genre => ({
           id: genre.GenreID,
           name: genre.Name,
@@ -75,9 +74,9 @@ export default function Genre() {
             <header className="section-header">
               <h2 className="section-heading">{genre.name}</h2>
             </header>
-            {/* --- FIXED: Changed class to 'product-grid' --- */}
+          
             <main className="product-grid">
-              {/* --- FIXED: Removed .slice(0, 7) --- */}
+              
               {genre.products.map(product => (
                 <ProductCard
                   key={product.id}

@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react'; // --- 1. IMPORT useState, useEffect ---
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import axios from 'axios'; // --- 2. IMPORT axios ---
+import axios from 'axios'; 
 
 const MyAccount = () => {
 
     const { user } = useSelector((state) => state.auth);
 
-    // --- 3. ADD State for the fetched address ---
+    
     const [latestAddress, setLatestAddress] = useState("Loading latest address...");
     const [fetchError, setFetchError] = useState(null);
 
-    // Navigation handlers
+    // navigation handlers
     const handleOrderHistoryClick = () => {
         window.location.href = '/orderHistory'; 
     };
@@ -18,16 +18,17 @@ const MyAccount = () => {
         window.location.href = '/accountSettings'; 
     };
     
-    // --- 4. ADD useEffect to fetch latest order address for Patrons ---
+    
     useEffect(() => {
-        // Only run this fetch if the user is loaded AND is a Patron
-        // (Admins/Employees use the 'user.Address' field directly)
+
+        // only run if the user is loaded  is a patron
+
         if (user && !user.hasOwnProperty('UserName')) {
             
             const fetchLatestOrderAddress = async () => {
                 setFetchError(null);
                 try {
-                    // Fetch all orders
+                    // gets all orders
                     const response = await axios.get(
                         "http://localhost:3001/api/inft3050/Orders",
                         { withCredentials: true } 
@@ -35,19 +36,19 @@ const MyAccount = () => {
 
                     const allOrders = response.data.list || [];
                     
-                    // Filter orders for the current patron
+                    // filters orders for current patron 
                     const patronOrders = allOrders.filter(order => 
                         order.TO && order.TO.PatronId === user.UserID
                     );
 
                     if (patronOrders.length > 0) {
-                        // Sort by OrderDate (descending) to find the most recent
+                        // Sort by OrderDate to find recent
                         patronOrders.sort((a, b) => new Date(b.OrderDate) - new Date(a.OrderDate));
                         
-                        // Get the latest one
+                        // gets latest one
                         const latestOrder = patronOrders[0];
                         
-                        // Format the address string
+                        // formatting address string
                         if (latestOrder.StreetAddress) {
                             const addressString = `${latestOrder.StreetAddress}, ${latestOrder.Suburb || ''}, ${latestOrder.State || ''} ${latestOrder.PostCode || ''}`;
                             setLatestAddress(addressString);
@@ -55,19 +56,19 @@ const MyAccount = () => {
                             setLatestAddress("No address found on your last order.");
                         }
                     } else {
-                        // This patron has no orders yet
+                        // for patrons with no orders
                         setLatestAddress("No orders found. Add an address in Settings.");
                     }
                 } catch (err) {
                     console.error("Error fetching orders:", err);
                     setFetchError("Could not load latest address.");
-                    setLatestAddress("Error loading address."); // Show error
+                    setLatestAddress("Error loading address."); // errors logs
                 }
             };
 
             fetchLatestOrderAddress();
         }
-    }, [user]); // This effect runs when the user object is loaded from Redux
+    }, [user]); // runs when the user object is loaded from Redux
 
 
     // Helper function to render user details or loading state
@@ -76,18 +77,17 @@ const MyAccount = () => {
             return <p>Loading account details...</p>;
         }
         
-        let userAddress; // This will be set by the logic below
+        let userAddress; 
 
-        // --- 5. UPDATE This logic to show the correct address ---
+        // shows correct address with this new logic
         if (user.Address) {
-            // This is for Admin/Employee users
+            // employee or admins
             userAddress = `${user.Address}, ${user.Suburb || ''} ${user.State || ''} ${user.PostCode || ''}`;
         } else if (user.hasOwnProperty('UserName')) {
-             // It's an Employee/Admin but their address field is blank
+             // employee or admin address is blank
              userAddress = 'No address on file.';
         } else {
-            // This is for Patrons
-            // We now use the state variable set by our useEffect
+            //use state variables
             userAddress = fetchError ? <span style={{color: 'red'}}>{fetchError}</span> : latestAddress;
         }
 
@@ -104,7 +104,7 @@ const MyAccount = () => {
         <div className="main-container">
             <h1 className="main-heading custom-header-color">My Account</h1>
 
-            {/* --- Grid layout (already updated) --- */}
+           
             <div className ="account-dashboard-layout" style={{ gridTemplateRows: '1fr' }}>
 
                 <div className="account-box">
@@ -122,7 +122,7 @@ const MyAccount = () => {
                 <div className="account-box">
                     <h2 className="admin-box-heading">Account Settings</h2>
                     
-                    {/* This function now uses Redux and the new state */}
+                    {/* uses redux and new state */}
                     {renderAccountDetails()}
 
                     <button className="admin-manage-button" onClick={handleAccountSettingsClick}>
@@ -130,7 +130,7 @@ const MyAccount = () => {
                     </button>
                 </div>  
 
-                {/* --- Redundant boxes are already removed --- */}
+                
                 
             </div>
         </div>
@@ -138,4 +138,3 @@ const MyAccount = () => {
 };
 
 export default MyAccount;
-

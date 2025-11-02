@@ -1,37 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Accept currentUser prop from App.js
+
 const AddressBook = ({ currentUser }) => {
-    // --- NEW: Handle nested user object ---
-    // This checks if App.js passed the whole response { user: {...} }
-    // or just the user object itself.
+ 
     const user = currentUser ? (currentUser.user || currentUser) : null;
 
-    // State for the "Add Address" form
+   
     const [streetAddress, setStreetAddress] = useState("");
     const [suburb, setSuburb] = useState("");
     const [postcode, setPostcode] = useState("");
     const [state, setState] = useState("NSW"); // Default to NSW
     const [country, setCountry] = useState("Australia"); // Default to Australia
 
-    // State for managing the list of addresses
+    
     const [addresses, setAddresses] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
 
-    // Helper function to fetch the user's addresses
+    // gets suers address
     const fetchAddresses = async () => {
         if (!user || user.hasOwnProperty('UserName')) {
-            // This page is for Patrons. Admins/Employees manage their single address
-            // in AccountSettings.
+
             return;
         }
 
         setIsLoading(true);
         try {
-            // Patrons' addresses are stored on the Patron object
+            // patron addresses are stored in patron table
             const response = await axios.get(
                 `http://localhost:3001/api/inft3050/Patrons/${user.UserID}`,
                 { withCredentials: true }
@@ -45,14 +42,14 @@ const AddressBook = ({ currentUser }) => {
         }
     };
 
-    // Fetch addresses on component mount (when 'user' is available)
+   
     useEffect(() => {
         if (user) {
             fetchAddresses();
         }
     }, [user]);
 
-    // --- Handle adding a new address ---
+    // -addibg new address
     const handleAddAddress = async (event) => {
         event.preventDefault();
         
@@ -86,7 +83,7 @@ const AddressBook = ({ currentUser }) => {
             setStreetAddress("");
             setSuburb("");
             setPostcode("");
-            // Re-fetch addresses to show the new one
+            
             await fetchAddresses();
 
         } catch (error) {
@@ -97,7 +94,7 @@ const AddressBook = ({ currentUser }) => {
         }
     };
 
-    // --- Handle deleting an address ---
+    // deleting address
     const handleDeleteAddress = async (addressId) => {
         if (!window.confirm("Are you sure you want to delete this address?")) {
             return;
@@ -113,7 +110,7 @@ const AddressBook = ({ currentUser }) => {
                 { withCredentials: true }
             );
             setSuccessMessage("Address deleted successfully!");
-            // Re-fetch addresses to remove it from the list
+            // gets addresses to remove from list
             await fetchAddresses();
 
         } catch (error) {
@@ -125,7 +122,7 @@ const AddressBook = ({ currentUser }) => {
     };
 
 
-    // --- Sidebar and Navigation Logic (Unchanged) ---
+    // sidebar and navigation
     const navigate = (path) => {
         window.location.href = path;
     };
@@ -137,7 +134,7 @@ const AddressBook = ({ currentUser }) => {
         { name: 'Address Book', path: '/addressBook' },
         { name: 'Payment Methods', path: '/paymentMethod' },
     ];
-    // --- End Sidebar Logic ---
+   
 
     // Show loading or non-patron message
     if (!user) {
@@ -160,11 +157,11 @@ const AddressBook = ({ currentUser }) => {
 
     return (
         <div className="main-container">
-            {/* --- UPDATED Title --- */}
+           
             <h1 className="main-heading custom-header-color">Address Book</h1>
 
             <div className="three-column-layout">
-                {/* --- Sidebar --- */}
+                
                 <div className="account-sidebar">
                     <h2 className="admin-box-heading">My Account</h2>
                     <ul className="sidebar-nav-list">
@@ -182,9 +179,9 @@ const AddressBook = ({ currentUser }) => {
                     </ul>
                 </div>
 
-                {/* --- Add Address Form --- */}
+            
                 <div className='threeColumns-account-container'>
-                    {/* --- UPDATED: Form now works --- */}
+                    
                     <form onSubmit={handleAddAddress}>
                         <div className="account-header">
                             <h2 className="admin-box-heading">Add New Address</h2>
@@ -234,12 +231,12 @@ const AddressBook = ({ currentUser }) => {
                     </form>
                 </div>
 
-                {/* --- Saved Address List --- */}
+               
                 <div className="threeColumns-account-container">
                     <div className='admin-box-heading'>Saved Addresses</div>
                     <div className='underline'></div>
                     
-                    {/* --- UPDATED: List is now dynamic --- */}
+                    
                     {isLoading && <p>Loading addresses...</p>}
                     
                     {addresses.length > 0 ? (
@@ -265,7 +262,7 @@ const AddressBook = ({ currentUser }) => {
                 </div>
             </div>
 
-            {/* --- Global Messages for the page --- */}
+           =
             <div style={{ textAlign: 'center', marginTop: '20px' }}>
                 {errorMessage && <p className="error-message" style={{ color: 'red' }}>{errorMessage}</p>}
                 {successMessage && <p className="success-message" style={{ color: 'green' }}>{successMessage}</p>}

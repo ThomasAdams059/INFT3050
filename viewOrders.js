@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// API URLs
+
 const ORDERS_URL = "http://localhost:3001/api/inft3050/Orders";
 const PATRONS_URL = "http://localhost:3001/api/inft3050/Patrons";
 const STOCKTAKE_URL = "http://localhost:3001/api/inft3050/Stocktake";
 const PRODUCT_URL = "http://localhost:3001/api/inft3050/Product";
 
-// --- Sub-Component (OrderDetails) remains the same ---
+
 const OrderDetails = ({ stockItems }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -89,7 +89,7 @@ const OrderDetails = ({ stockItems }) => {
 };
 
 
-// --- Main ViewOrders Component ---
+
 const ViewOrders = () => {
   const [orders, setOrders] = useState([]);
   const [patronNameMap, setPatronNameMap] = useState({});
@@ -97,7 +97,7 @@ const ViewOrders = () => {
   const [error, setError] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
 
-  // --- NEW: State for the filter input ---
+
   const [filterId, setFilterId] = useState("");
 
   useEffect(() => {
@@ -135,7 +135,7 @@ const ViewOrders = () => {
         fetchedOrders.sort((a, b) => new Date(b.OrderDate) - new Date(a.OrderDate));
         setOrders(fetchedOrders);
 
-      } catch (err) {
+      } catch (err) { // error logs to be removed later
         console.error("Error fetching orders:", err);
         setError("Failed to load order data. Ensure you are logged in with appropriate permissions.");
         if (err.response?.status === 401 || err.response?.status === 403) {
@@ -161,9 +161,10 @@ const ViewOrders = () => {
     window.location.href = '/employeePage';
   };
 
-  // --- NEW: Filter logic ---
+ 
   const filteredOrders = orders.filter(order =>
-    // Check if the OrderID (converted to string) includes the filter text
+
+    // checks if orderID includes the filter text
     order.OrderID.toString().includes(filterId)
   );
 
@@ -179,7 +180,7 @@ const ViewOrders = () => {
         &larr; Back to Employee Dashboard
       </button>
 
-      {/* --- NEW: Filter Input --- */}
+     
       <div className="filter-container" style={{ marginBottom: '20px' }}>
         <label htmlFor="orderFilter" style={{ marginRight: '10px', fontWeight: 'bold' }}>
           Filter by Order ID:
@@ -193,17 +194,21 @@ const ViewOrders = () => {
           style={{ padding: '8px', fontSize: '1em', width: '250px' }}
         />
       </div>
-      {/* --- END NEW Filter Input --- */}
+    
 
       {loading && <p>Loading orders...</p>}
       {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
 
       {!loading && !error && (
         <section className="management-section">
-          {/* --- UPDATED: Use filtered list length --- */}
+
+
+          {/*added to use filtered list length */}
           <h2>All Orders ({filteredOrders.length})</h2>
           <div className="scrollable-list-container" style={{ maxHeight: '70vh', overflowY: 'auto', border: '1px solid #ccc', padding: '10px' }}>
-            {/* --- UPDATED: Map over filtered list --- */}
+
+
+            {/* map over filtered list */}
             {filteredOrders.length > 0 ? (
               filteredOrders.map(order => (
                 <div key={order.OrderID} className="list-item-row" style={{ borderBottom: '1px solid #eee', padding: '10px', marginBottom: '10px', background: '#fff' }}>
@@ -236,7 +241,7 @@ const ViewOrders = () => {
                 </div>
               ))
             ) : (
-              // --- UPDATED: Show different message if filtering ---
+              // shows differnet messages if filtering
               <p>{filterId ? 'No orders found matching your filter.' : 'No orders found in the database.'}</p>
             )}
           </div>

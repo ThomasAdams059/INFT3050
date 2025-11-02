@@ -34,6 +34,7 @@ const CreateAccount = ({ onCreateAccount }) => {
       return;
     }
 
+    // email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setErrorMessage("Please enter a valid email address.");
@@ -47,6 +48,7 @@ const CreateAccount = ({ onCreateAccount }) => {
 
      sha256(salt + password).then((hashedPW) => {
 
+      // new customer info
       const newCustomer = {
         Email: email,
         Name: fullName,
@@ -56,8 +58,8 @@ const CreateAccount = ({ onCreateAccount }) => {
 
       console.log("Creating new customer:", newCustomer);
 
-      // --- THIS IS THE FIX ---
-      // The endpoint for POST is /Customers (plural), not /Customer
+
+      // posts to patrons table -- doesnt work :/
       axios.post(
         `${baseUrl}/Patrons`,
         newCustomer,
@@ -68,7 +70,7 @@ const CreateAccount = ({ onCreateAccount }) => {
           }
         }
       )
-      // --- END FIX ---
+      
       .then((response) => {
         console.log("Customer account created successfully:", response.data);
         setSuccessMessage(`Account for "${fullName}" created successfully! Redirecting to login...`);
@@ -86,6 +88,8 @@ const CreateAccount = ({ onCreateAccount }) => {
         console.error("Error creating account:", error);
         let errorMsg = "Failed to create account. ";
         
+
+        // error logging remove later
         if (error.response) {
           const status = error.response.status;
           if (status === 409) {

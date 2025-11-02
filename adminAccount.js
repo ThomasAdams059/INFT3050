@@ -1,7 +1,7 @@
 import React from 'react';
 
 const AdminAccount = () => {
-  // Functions to handle button clicks (navigate to management pages)
+  // functions to navigate to user management, item management and patron management pages
   const handleManageUsersClick = () => {
     window.location.href = '/userManagement';
   };
@@ -24,7 +24,7 @@ const AdminAccount = () => {
       
       <div className="admin-dashboard-layout">
         
-        {/* User Management Box */}
+        
         <div className="admin-box">
           <h2 className="admin-box-heading">User Management</h2>
           <ul className="admin-task-list">

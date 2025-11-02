@@ -25,19 +25,19 @@ const SearchResults = () => {
             const normalizedQuery = query.toLowerCase().replace(/\s/g, '');
 
             try {
-                  // --- FIX: Added backticks (`) for template literals ---
+                  
                   const [productResponse, stocktakeResponse, genreResponse] = await Promise.all([
                       axios.get(`${API_BASE_URL}/Product?limit=10000`, { withCredentials: true }),
                       axios.get(`${API_BASE_URL}/Stocktake?limit=10000`, { withCredentials: true }),
                       axios.get(`${API_BASE_URL}/Genre?limit=10000`, { withCredentials: true })
                   ]);
-                  // --- END FIX ---
+                 
                 
                 const allProducts = productResponse.data.list || [];
                 const stocktakeList = stocktakeResponse.data.list || [];
-                const allGenres = genreResponse.data.list || []; // <-- NEW
+                const allGenres = genreResponse.data.list || []; 
 
-                // --- NEW: Create a Price Map (like in genre.js) ---
+                // like in genre.js
                 const priceMap = {};
                 stocktakeList.forEach(item => {
                   if (item.Price && (!priceMap[item.ProductId] || item.SourceId === 1)) {
@@ -45,28 +45,30 @@ const SearchResults = () => {
                   }
                 });
 
-                // --- NEW: Create a Genre Map ---
+                
                 const genreMap = {};
                 allGenres.forEach(genre => {
                   genreMap[genre.GenreID] = genre.Name.toLowerCase().replace(/\s/g, '');
                 });
                 
-                // --- UPDATED: Filter logic to include Genre ---
+                //updated filter logic to include genre as well
                 const matches = allProducts.filter(product => {
                     if (!product.Name && !product.Author && !product.Genre) return false;
                     
                     const name = (product.Name || '').toLowerCase().replace(/\s/g, '');
                     const author = (product.Author || '').toLowerCase().replace(/\s/g, '');
-                    // Find the genre name (e.g., "movies") from the map
+                    
+                    
+                    // find genre name
                     const genreName = genreMap[product.Genre] || ''; 
                     
-                    // Check if query is in name, author, OR genre name
+                    // if query is in name, author or genre name
                     return name.includes(normalizedQuery) || 
                            author.includes(normalizedQuery) ||
                            genreName.includes(normalizedQuery);
                 });
 
-                // --- NEW: Map prices to the filtered matches ---
+                // prices mapped to filtered matches
                 const pricedMatches = matches.map(product => ({
                   ...product,
                   price: priceMap[product.ID] ? `$${priceMap[product.ID].toFixed(2)}` : 'N/A'
@@ -77,13 +79,15 @@ const SearchResults = () => {
             } catch (error) {
                 console.error("Error fetching search results:", error);
             } finally {
-                // --- NEW: Set loading to false in a finally block ---
+               
+
+
                 setLoading(false);
             }
         };
 
         fetchSearchResults();
-    }, [window.location.search]); // Re-run search if URL query changes
+    }, [window.location.search]); // rerun search is URL changes
 
     const handleCardClick = (productId) => {
         window.location.href = `/products?id=${productId}`;
@@ -124,7 +128,7 @@ const SearchResults = () => {
               key={product.ID}
               imageSrc={"https://placehold.co/200x300/F4F4F5/18181B?text=Book"}
               productName={product.Name}
-              price={product.price} // <-- Use the price from the map
+              price={product.price}
               onClick={() => handleCardClick(product.ID)}
             />
           ))}

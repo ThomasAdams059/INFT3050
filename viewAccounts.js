@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// API URLs
+
 const USERS_URL = "http://localhost:3001/api/inft3050/User";
 const PATRONS_URL = "http://localhost:3001/api/inft3050/Patrons";
 
@@ -11,7 +11,7 @@ const ViewAccounts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- NEW: State for the filter input ---
+  // added new state for the new filter logic
   const [filterText, setFilterText] = useState("");
 
   useEffect(() => {
@@ -45,10 +45,10 @@ const ViewAccounts = () => {
     window.location.href = '/employeePage';
   };
 
-  // --- NEW: Filter logic ---
+  // new and imporved filter logic UPDATTEEE
   const lowerCaseFilter = filterText.toLowerCase();
 
-  // Filter Admin/Employee users
+  // filter admin and employees
   const filteredUsers = users.filter(user => {
     const idMatch = user.UserID.toString().includes(lowerCaseFilter);
     const nameMatch = user.Name && user.Name.toLowerCase().includes(lowerCaseFilter);
@@ -57,15 +57,15 @@ const ViewAccounts = () => {
     return idMatch || nameMatch || usernameMatch || emailMatch;
   });
 
-  // Filter Patrons
+  // filter patrons they dont have usernames but email address
   const filteredPatrons = patrons.filter(patron => {
     const idMatch = patron.UserID.toString().includes(lowerCaseFilter);
     const nameMatch = patron.Name && patron.Name.toLowerCase().includes(lowerCaseFilter);
     const emailMatch = patron.Email && patron.Email.toLowerCase().includes(lowerCaseFilter);
-    // Patrons don't have UserName, they use Email
+    
     return idMatch || nameMatch || emailMatch;
   });
-  // --- END Filter logic ---
+ 
 
   return (
     <div className="main-container">
@@ -73,13 +73,13 @@ const ViewAccounts = () => {
 
       <button 
         onClick={handleBackToDashboard} 
-        className="admin-manage-button" // Re-using class
+        className="admin-manage-button"
         style={{ marginBottom: '20px', width: 'auto' }}
       >
         &larr; Back to Employee Dashboard
       </button>
 
-      {/* --- NEW: Filter Input --- */}
+    
       <div className="filter-container" style={{ marginBottom: '20px', marginTop: '10px' }}>
         <label htmlFor="accountFilter" style={{ marginRight: '10px', fontWeight: 'bold' }}>
           Filter Accounts (ID, Name, Username, Email):
@@ -93,7 +93,7 @@ const ViewAccounts = () => {
           style={{ padding: '8px', fontSize: '1em', width: '300px' }}
         />
       </div>
-      {/* --- END NEW Filter Input --- */}
+      
 
       {loading && <p>Loading accounts...</p>}
       {error && <p className="error-message" style={{ color: 'red' }}>{error}</p>}
@@ -101,7 +101,7 @@ const ViewAccounts = () => {
       {!loading && !error && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
 
-          {/* --- UPDATED: Admin/Employee Users Section --- */}
+          {/* user role section */}
           <section className="management-section">
             <h2>Admin/Employee Users ({filteredUsers.length})</h2>
             <div className="scrollable-list-container" style={{ maxHeight: '500px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px' }}>
@@ -121,7 +121,7 @@ const ViewAccounts = () => {
             </div>
           </section>
 
-          {/* --- UPDATED: Patron Accounts Section --- */}
+          {/* patron accounts section */}
           <section className="management-section">
             <h2>Patron Accounts ({filteredPatrons.length})</h2>
              <div className="scrollable-list-container" style={{ maxHeight: '500px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px' }}>

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux'; // Import Redux hook
+import { useSelector } from 'react-redux'; 
 import axios from 'axios';
 import ProductCard from './productCard';
 
-// Accept only 'onAddToCart' prop from App.js
+
 const ProductPage = ({ onAddToCart }) => {
-  // --- NEW: Get auth state from Redux ---
+  
   const { isLoggedIn, isPatron } = useSelector((state) => state.auth);
 
   const [rating, setRating] = useState(0);
@@ -15,7 +15,7 @@ const ProductPage = ({ onAddToCart }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // --- State for managing product versions ---
+  // states fro managing product versions
   const [availableSources, setAvailableSources] = useState([]);
   const [selectedStockItemId, setSelectedStockItemId] = useState(null);
   const [selectedPrice, setSelectedPrice] = useState(null);
@@ -31,7 +31,7 @@ const ProductPage = ({ onAddToCart }) => {
         setLoading(false);
         return;
       }
-      // Reset all state
+      // resets all states
       setLoading(true);
       setError(null);
       setProductData(null);
@@ -42,18 +42,18 @@ const ProductPage = ({ onAddToCart }) => {
 
       const baseUrl = "http://localhost:3001/api/inft3050";
       
-      // --- FIX: Add limit=10000 to fetch ALL items ---
+      // pagination fix to get all products by setting limit to 10000
       const allProductsUrl = `${baseUrl}/Product?limit=10000`;
       const stocktakeUrl = `${baseUrl}/Stocktake?limit=10000`;
-      // --- END FIX ---
+      
 
       try {
-        // --- FIX: Add withCredentials: true ---
+        
         const [allProductsResponse, stocktakeResponse] = await Promise.all([
           axios.get(allProductsUrl, { withCredentials: true }),
-          axios.get(stocktakeUrl, { withCredentials: true }) // Fetch the full stocktake list
+          axios.get(stocktakeUrl, { withCredentials: true }) // gets full stocktake list
         ]);
-        // --- END FIX ---
+        
         
         const allProductsList = allProductsResponse.data.list;
         const stocktakeList = stocktakeResponse.data.list;
@@ -65,7 +65,7 @@ const ProductPage = ({ onAddToCart }) => {
           return;
         }
 
-        // --- Logic for finding available sources (Unchanged) ---
+        // for finding available sources 
         const allSourcesForProduct = stocktakeList
           .filter(item => item.ProductId.toString() === productId && item.Source)
           .map(item => ({
@@ -78,26 +78,26 @@ const ProductPage = ({ onAddToCart }) => {
         setAvailableSources(allSourcesForProduct);
 
         if (allSourcesForProduct.length > 0) {
-          // Default to the first available source
+          // defaults to the first available source
           setSelectedStockItemId(allSourcesForProduct[0].itemId);
           setSelectedPrice(allSourcesForProduct[0].price);
           mainProduct.Price = allSourcesForProduct[0].price; 
         } else {
-          mainProduct.Price = null; // No purchase options
+          mainProduct.Price = null; // no purchase option then
         }
-        // --- END Source Logic ---
+        
 
         setProductData(mainProduct);
 
-        // Other titles logic (Unchanged)
+        // other titles logic
         if (mainProduct.Author) {
           const authorProducts = allProductsList.filter(
             p => p.Author === mainProduct.Author && p.ID.toString() !== productId
           );
           
-          // --- FIX: Correctly find price for "other titles" ---
+          // find price for "other titles"
           const otherTitlesWithPrices = authorProducts.map(p => {
-            // Find the cheapest stock item for this other product
+            // finds cheapest stock item for this other product
             const otherStock = stocktakeList.find(item => item.ProductId === p.ID);
             return {
               id: p.ID, name: p.Name,
@@ -105,7 +105,7 @@ const ProductPage = ({ onAddToCart }) => {
               price: otherStock ? `$${otherStock.Price.toFixed(2)}` : 'N/A'
             };
           }).slice(0, 7);
-          // --- END FIX ---
+        
           
           setOtherTitles(otherTitlesWithPrices);
         }
@@ -117,9 +117,9 @@ const ProductPage = ({ onAddToCart }) => {
       }
     };
     fetchProductDetails();
-  }, [window.location.search]); // Re-run on URL change
+  }, [window.location.search]); // rerun on URL change
 
-  // --- Handler for changing the selected source (Unchanged) ---
+  // for changing the selected source 
   const handleSourceChange = (event) => {
     const newSelectedItemId = parseInt(event.target.value, 10);
     const selectedSource = availableSources.find(s => s.itemId === newSelectedItemId);
@@ -129,13 +129,13 @@ const ProductPage = ({ onAddToCart }) => {
       setSelectedPrice(selectedSource.price);
       setProductData(prevData => ({
         ...prevData,
-        Price: selectedSource.price // Update price on main product data
+        Price: selectedSource.price //updates price on main product data
       }));
     }
   };
 
- // --- "Add to Cart" Handler (Unchanged) ---
- // This function now uses the 'isLoggedIn' and 'isPatron' variables from Redux
+
+ // now uses the 'isLoggedIn' and 'isPatron' variables from redux
 const handleAddToOrderClick = async () => {
   if (!isLoggedIn || !isPatron) {
     alert("Please log in as a customer to add items to your cart.");
@@ -168,10 +168,10 @@ const handleAddToOrderClick = async () => {
       stockItemId: selectedStockItemId, 
       sourceName: selectedSource.sourceName,
       image: "https://placehold.co/200x300/F4F4F5/18181B?text=Book",
-      quantity: 1 // Add quantity 1
+      quantity: 1 // adds 1
     };
 
-    // Call the onAddToCart function passed from App.js
+    // calls onAddToCart function from App.js
     onAddToCart(itemToAdd);
 
   } catch (error) {
@@ -182,14 +182,14 @@ const handleAddToOrderClick = async () => {
   }
 };
   
-  // Other handlers (Unchanged)
+  
   const handleStarClick = (index) => setRating(index);
   const handleMouseEnter = (index) => setHoverRating(index);
   const handleMouseLeave = () => setHoverRating(0);
   const displayRating = hoverRating || rating;
   const handleOtherCardClick = (id) => window.location.href = `/products?id=${id}`;
 
-  // Helper function (Unchanged)
+  // helper fucntion
   const getGenreName = (genreId) => {
     switch (genreId) {
       case 1: return 'Book';
@@ -239,8 +239,7 @@ const handleAddToOrderClick = async () => {
               <img src="https://placehold.co/70x40/003C87/FFFFFF?text=VISA" alt="VISA" className="rounded-md" />
             </div>
 
-            {/* --- Source Selection (Patrons Only) --- */}
-            {/* This logic now uses Redux state */}
+            
             {isLoggedIn && isPatron && (
               <div className="source-selection" style={{ margin: '15px 0' }}>
                 <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1em' }}>Select Version:</h3>
@@ -267,9 +266,11 @@ const handleAddToOrderClick = async () => {
                 )}
               </div>
             )}
-            {/* --- END Source Selection --- */}
+           
 
-            {/* Updated Button Logic (uses Redux state) */}
+           
+
+            {/* updated to use redux state now */}
             {isLoggedIn && isPatron ? (
               <button
                   className="add-to-cart-button"

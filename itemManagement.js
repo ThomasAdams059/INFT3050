@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 
-// --- UPDATED: Accept currentUser prop ---
+// updated to use currentUser prop ---
 const ItemManagement = () => {
   
     const { user } = useSelector((state) => state.auth);
 
-  // --- State for Add Item form ---
+  
   const [itemName, setItemName] = useState("");
   const [author, setAuthor] = useState("");
   const [description, setDescription] = useState("");
-  const [published, setPublished] = useState(""); // Will be type="date"
+  const [published, setPublished] = useState(""); 
   
-  // --- NEW: State for dynamic dropdowns ---
+ 
   const [genres, setGenres] = useState([]);
   const [genreId, setGenreId] = useState(""); 
   const [subGenreOptions, setSubGenreOptions] = useState([]);
@@ -25,13 +25,13 @@ const ItemManagement = () => {
   const [quantity, setQuantity] = useState("");
   
 
-  // --- State for Edit/Delete form ---
+ 
   const [searchItemName, setSearchItemName] = useState("");
   const [currentItem, setCurrentItem] = useState(null);
   const [showItemInfo, setShowItemInfo] = useState(false);
   const [stocktakeEntries, setStocktakeEntries] = useState([]);
 
-  // --- Separated state for messages/loading ---
+  // states for messages and loading 
   const [isLoadingAdd, setIsLoadingAdd] = useState(false);
   const [errorAdd, setErrorAdd] = useState("");
   const [successAdd, setSuccessAdd] = useState("");
@@ -40,16 +40,16 @@ const ItemManagement = () => {
   const [errorSearch, setErrorSearch] = useState("");
   const [successSearch, setSuccessSearch] = useState("");
 
-  // API base URLs
+
   const baseUrl = "http://localhost:3001/api/inft3050";
   const productBaseUrl = `${baseUrl}/Product`;
   const stocktakeBaseUrl = `${baseUrl}/Stocktake`;
 
-  // --- NEW: Navigation handler ---
+  // back to dashboard button
   const handleBackToDashboard = () => {
     window.location.href = '/adminAccount';
   };
-  // --- END NEW ---
+  
 
   // gets genres
 useEffect(() => {
@@ -228,7 +228,7 @@ const handleSearchItem = (event) => {
 
   console.log(`Searching for: "${searchItemName}"`);
 
-  // Recursive function to fetch multiple pages
+  //recurisve function to get multiple pages and not just first 25 items
   const fetchProductsUntilFound = (page = 1, accumulatedProducts = []) => {
     console.log(`Fetching page ${page}...`);
     
@@ -240,7 +240,7 @@ const handleSearchItem = (event) => {
         console.log(`Page ${page}: ${productsThisPage.length} products`);
         console.log(`Total accumulated: ${allProducts.length} products`);
         
-        // Try to find the product in what we have so far
+        // find product in what was recovered from database
         const foundProduct = allProducts.find(
           p => p.Name.toLowerCase() === searchItemName.toLowerCase()
         );
@@ -250,14 +250,14 @@ const handleSearchItem = (event) => {
           return { product: foundProduct };
         }
         
-        // Check pagination info
+        // pagination info
         const pageInfo = response.data.pageInfo;
         console.log(`Page ${pageInfo.page} of ~${Math.ceil(pageInfo.totalRows / pageInfo.pageSize)}`);
         
-        // If there are more pages and we haven't exceeded our limit
+        // until exceeded limit
         if (!pageInfo.isLastPage && page < 20) {
           console.log(`Not found yet, fetching next page...`);
-          // Recursively fetch next page
+          // recursive search next page
           return fetchProductsUntilFound(page + 1, allProducts);
         } else {
           console.log(`Product not found after searching ${allProducts.length} products`);
@@ -266,7 +266,7 @@ const handleSearchItem = (event) => {
       });
   };
 
-  // Start the recursive search
+  // recursive search
   fetchProductsUntilFound()
     .then((result) => {
       if (!result.product) {
@@ -277,7 +277,7 @@ const handleSearchItem = (event) => {
       
       setCurrentItem(result.product);
 
-      // Fetch stocktake for this product
+      // gets stocktake for this product
       return axios.get(stocktakeBaseUrl, { withCredentials: true })
         .then((stocktakeResponse) => {
           return { product: result.product, stocktakeResponse };
@@ -427,20 +427,20 @@ const handleEditStockItem = (entry) => {
 
   return (
     <div className="management-container">
-      {/* --- NEW BUTTON --- */}
+      {/* back to dashboard button added here */}
       <button 
         onClick={handleBackToDashboard} 
-        className="admin-manage-button" // Use a consistent class
+        className="admin-manage-button" 
         style={{ marginBottom: '20px', width: 'auto', backgroundColor: '#6c757d', color: 'white' }} 
       >
         &larr; Back to Admin Dashboard
       </button>
-      {/* --- END NEW BUTTON --- */}
+      
       
       <h1>Item Management</h1>
       
       <div className="management-grid">
-        {/* --- ADD ITEM FORM --- */}
+        {/* add item form on the left like in wireframe */}
         <div className="management-section">
           <h2>Add Item</h2>
           <form onSubmit={handleAddItem}>
@@ -517,7 +517,7 @@ const handleEditStockItem = (entry) => {
               </select>
             </div>
 
-            {/* --- UPDATED: Source dropdown instead of text input --- */}
+            {/* made source dropdown instead of text */}
             <div className="form-group">
               <label>Source<span className="required">*</span></label>
               <select 
@@ -564,7 +564,7 @@ const handleEditStockItem = (entry) => {
           </form>
         </div>
         
-        {/* --- EDIT/DELETE ITEM FORM --- */}
+        {/* edit and delete form like in wireframes */}
         <div className="management-section">
           <h2>Edit/Delete Item</h2>
           <form onSubmit={handleSearchItem} className="search-box">

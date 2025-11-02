@@ -1,16 +1,16 @@
 import React, { useState, useRef } from "react";
-import emailjs from '@emailjs/browser'; // Import EmailJS
+import emailjs from '@emailjs/browser'; 
 
 const RecoverAccount = () => {
   const [email, setEmail] = useState("");
   const form = useRef();
 
-  // Add state for loading and messages
+  // state for loading and messages
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   
-  // Replace alert with EmailJS function
+  
   const handleSendRecoveryEmail = (e) => {
     e.preventDefault();
 
@@ -23,16 +23,16 @@ const RecoverAccount = () => {
     setErrorMessage("");
     setSuccessMessage("");
 
-    // --- 4. Add your EmailJS keys here ---
-    // --- You get these from your EmailJS.com account ---
+    
+    // from EmailJS.com account 
     const YOUR_SERVICE_ID = "service_et6r4hk";
     const YOUR_TEMPLATE_ID = "template_hb5md2k";
     const YOUR_PUBLIC_KEY = "78K8dIEjW-4inJrN4";
 
-    // This object must match the variables in your EmailJS template
+    
     const templateParams = {
       to_email: email,
-      // You can add more variables here, e.g.:
+     
       // recovery_link: `http://localhost:3000/reset-password?token=12345`
     };
 
@@ -56,7 +56,7 @@ const RecoverAccount = () => {
 
   return (
     <div className="account-container">
-      {/* --- 5. Wrap inputs in a <form> tag --- */}
+      {/* wrap inputs in form tags */}
       <form ref={form} onSubmit={handleSendRecoveryEmail}>
         <div className="account-header">
           <div className="account-text">Recover Account</div>
@@ -69,16 +69,16 @@ const RecoverAccount = () => {
             <input
               id="email"
               type="email"
-              name="to_email" // --- Add name attribute for EmailJS ---
+              name="to_email" 
               placeholder="Email"
               value={email}
-              // --- THIS WAS THE BUG (e.g.value -> e.target.value) ---
+           
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
         </div>
 
-        {/* --- 6. Show error/success messages --- */}
+        {/* error ans success messages display */}
         {errorMessage && (
           <div className="error-message" style={{color: 'red', margin: '10px 0', textAlign: 'center'}}>
             {errorMessage}
@@ -92,7 +92,7 @@ const RecoverAccount = () => {
 
         <div className="create-container">
           <button
-            type="submit" // --- Make this a submit button ---
+            type="submit" 
             className="submit"
             disabled={isLoading}
             style={{opacity: isLoading ? 0.5 : 1}}

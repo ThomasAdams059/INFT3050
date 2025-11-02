@@ -1,38 +1,38 @@
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux'; // Import useSelector
+import { useSelector } from 'react-redux'; 
 
-// --- 1. REMOVE 'isLoggedIn', 'isAdmin', 'isPatron' PROPS ---
+
 export default function Navbar({ onLogout, onSearch }) {
     
-  // State to hold the current value of the search input
+  
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- NEW: Get auth state from Redux ---
+  // gets auth state from redux 
   const { isLoggedIn, isAdmin, isPatron } = useSelector((state) => state.auth);
 
-  // Handle logout click
+  // logout
   const handleLogoutClick = (e) => {
     e.preventDefault(); 
     onLogout();
   };
 
-  // Handle the search input field change
+  // search input field change handler
   const handleSearchChange = (e) => {
       setSearchTerm(e.target.value);
   };
 
-  // Handle the form submission
+  // form submission handler
   const handleSearchSubmit = (e) => {
-      e.preventDefault(); // Prevents the page from reloading
+      e.preventDefault(); // prevents page reload
       
-      // Pass the search term up to the parent component via the onSearch prop
+      // passes the search term by OnSearch prop
       if (onSearch && searchTerm.trim() !== "") {
           onSearch(searchTerm.trim());
-          setSearchTerm(""); // Clear the search bar after submitting
+          setSearchTerm(""); // clears the search bar after submitting
       }
   };
 
-  // --- This logic remains the same, but now uses Redux state ---
+  // same logic as before but uses redux state
   const accountHref = isLoggedIn ? (isPatron ? "/myAccount" : (isAdmin ? "/adminAccount" : "/employeePage")) : "/login";
   
   return (

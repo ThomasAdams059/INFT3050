@@ -8,12 +8,12 @@ const PaymentMethods = () => {
     const [cvc, setCvc] = useState("");
     const [isPrimary, setIsPrimary] = useState(false);
 
-     /* Handle for button - currently just a placeholder for the button to work */
+     
     const handleRecoverClick = () => {
         window.location.href = "/recoverAccount";
     };
 
-// Helper function for navigation
+//  for navigation
 const navigate = (path) => {
     window.location.href = path;
 };
@@ -21,16 +21,16 @@ const navigate = (path) => {
 const SavedCard = ({ name, lastFour, cvc, expiry, type }) => (
     <div className="cardDetails">
         
-        {/* LEFT BLOCK: Icon and Name */}
+        {/* icon and name on left */}
         <div className="card-icon-container-display">
-            {/* Using a placeholder for the card logo */}
+            {/*placeholder for the card logo */}
             <div className="card-logo-placeholder">
                 {type.slice(0, 4).toUpperCase()} 
             </div>
             <span className="card-name">{name}</span>
         </div>
 
-        {/* RIGHT BLOCK: Details */}
+        {/* details on right */}
         <div className="card-info-block">
             <p className="card-number-text">Card Number: **** **** **** {lastFour}</p>
             <div className="card-meta-row">
@@ -41,7 +41,7 @@ const SavedCard = ({ name, lastFour, cvc, expiry, type }) => (
     </div>
 );
 
-// Links for the sidebar
+// sidebar links
     const sidebarLinks = [
         { name: 'Account Dashboard', path: '/myAccount' },
         { name: 'Order History', path: '/orderHistory' },
@@ -114,7 +114,7 @@ const savedCards = [
                 <div className='threeColumns-account-container'>
                     <h2 className="admin-box-heading">Saved Payment Methods</h2>
                     
-                    {/* Loop through your cards */}
+                    {/* loop through for cards */}
                     {savedCards.map((card, index) => (
                         <SavedCard 
                             key={index} 
@@ -126,7 +126,7 @@ const savedCards = [
                         />
                     ))}
                     
-                    {/* Optional: Button or link to manage cards */}
+                    
                     <div className="threeColumns-account-container-button">Manage Payment Methods</div>
                 </div>
             </div>
@@ -135,4 +135,3 @@ const savedCards = [
 };
 
 export default PaymentMethods;
-

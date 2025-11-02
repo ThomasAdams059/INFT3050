@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// --- Password Hashing Function ---
+// same as userhelper
 async function sha256(message) {
   // encode as UTF-8
   const msgBuffer = new TextEncoder().encode(message);
@@ -13,13 +13,11 @@ async function sha256(message) {
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
 }
-// ---
 
-// --- API URLs ---
 const API_PREFIX_SHORT = "http://localhost:3001"; 
 const PATRONS_API_URL = "http://localhost:3001/api/inft3050/Patrons";
 
-// --- Initial State ---
+
 const initialState = {
   user: null, 
   isLoggedIn: false,
@@ -29,20 +27,18 @@ const initialState = {
   error: null,
 };
 
-// --- Async Thunks ---
 
-/**
- * 1. LOGIN THUNK (with Patron Workaround)
- */
+
+// login for users and with patron work around ----- see below
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async ({ username, password }, { rejectWithValue }) => {
     try {
-      // --- PLAN A: Try the official login (for Admins/Employees) ---
+      // login for users like admin and employees
       const response = await axios.post(
-        `${API_PREFIX_SHORT}/login`, // "http://localhost:3001/login"
+        `${API_PREFIX_SHORT}/login`, // 
         { username, password },
-        { withCredentials: true } // This sends the cookie
+        { withCredentials: true } // cookie
       );
       
       const isUserLogin = response.data.hasOwnProperty('isAdmin');
@@ -51,12 +47,12 @@ export const loginUser = createAsyncThunk(
       let isAdmin, isPatron, userType;
 
       if (isUserLogin) {
-        // It's an Admin or Employee
+        // if it is an admin or employee
         isAdmin = response.data.isAdmin === true || response.data.isAdmin === 'true';
         isPatron = false;
         userType = isAdmin ? 'admin' : 'employee';
       } else {
-        // This block is for patrons IF the /login endpoint *was* working
+        // for patrons login
         isAdmin = false;
         isPatron = true;
         userType = 'patron';
@@ -68,12 +64,12 @@ export const loginUser = createAsyncThunk(
       return { user: userData, isAdmin, isPatron };
 
     } catch (error) {
-      // --- PLAN B: Official login failed. Try manual Patron login. ---
+      // try manual patron login if fails
       if (error.response && error.response.status === 401) {
         console.warn("Official login failed (401). Attempting manual patron login fallback...");
         
         try {
-          // 1. Fetch ALL patrons.
+          // gets all Patrons
           const patronsResponse = await axios.get(PATRONS_API_URL);
           const patronsList = patronsResponse.data.list;
 
@@ -81,18 +77,18 @@ export const loginUser = createAsyncThunk(
             return rejectWithValue("Patron data could not be loaded.");
           }
 
-          // 2. Find the patron by email
+          // finds patron by email
           const patron = patronsList.find(p => p.Email === username);
           if (!patron) {
             return rejectWithValue("Invalid username or password."); // Patron not found
           }
 
-          // 3. Re-create the hash using the fetched salt
+          // remakes the hash
           const clientHash = await sha256(patron.Salt + password);
 
           // 4. Compare hashes
           if (clientHash === patron.HashPW) {
-            // 5. SUCCESS! Manually build the user object.
+            // manually makes the user object
             const userData = patron;
             const isAdmin = false;
             const isPatron = true;
@@ -118,9 +114,7 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-/**
- * 2. LOGOUT THUNK
- */
+//logout 
 export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async () => {
@@ -135,9 +129,7 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
-/**
- * 3. CHECK STATUS THUNK
- */
+// chekc status
 export const checkLoginStatus = createAsyncThunk(
   'auth/checkLoginStatus',
   () => {
@@ -156,7 +148,7 @@ export const checkLoginStatus = createAsyncThunk(
 );
 
 
-// --- Auth Slice ---
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -171,20 +163,20 @@ const authSlice = createSlice({
       localStorage.removeItem('user');
       localStorage.removeItem('userType');
     },
-    // --- 1. ADD THE updateUser REDUCER ---
+    // add updateUser
     updateUser: (state, action) => {
       const updatedUserData = action.payload;
       
-      // Update state
+      // upadtes state
       state.user = updatedUserData;
       
-      // Update localStorage
+      // updates localstorage
       localStorage.setItem('user', JSON.stringify(updatedUserData));
     }
   },
   extraReducers: (builder) => {
     builder
-      // --- Login Thunk ---
+      // login
       .addCase(loginUser.pending, (state) => {
         state.status = 'loading';
         state.error = null;
@@ -198,9 +190,9 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload; // Error message from rejectWithValue
+        state.error = action.payload; // error message from rejectWithValue for debugginh
       })
-      // --- Logout Thunk ---
+      // logout
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
         state.isLoggedIn = false;
@@ -209,7 +201,7 @@ const authSlice = createSlice({
         state.status = 'idle';
         state.error = null;
       })
-      // --- Check Status Thunk ---
+      // check status
       .addCase(checkLoginStatus.fulfilled, (state, action) => {
         if (action.payload) {
           state.user = action.payload.user;
@@ -224,4 +216,3 @@ const authSlice = createSlice({
 
 export const { logout, updateUser } = authSlice.actions; 
 export default authSlice.reducer;
-

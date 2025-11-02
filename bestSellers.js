@@ -16,13 +16,13 @@ export default function BestSellers() {
         // Filter out any items that are missing product information
         const validItems = stocktakeItems.filter(item => item.Product && item.Product.Name);
 
-        // Sort items by Quantity in ascending order (least remaining stock)
+        // Sort items by quantity in ascending order 
         const sortedItems = validItems.sort((a, b) => a.Quantity - b.Quantity);
 
         // Take the top 10 items from the sorted list
         const top10BestSellers = sortedItems.slice(0, 10);
 
-        // Map the top 10 items to a structure that the ProductCard component can use
+        //map the top 10 items to a structure that the ProductCard component can use
         const formattedProducts = top10BestSellers.map(item => ({
           id: item.Product.ID,
           name: item.Product.Name,

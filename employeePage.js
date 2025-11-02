@@ -2,7 +2,7 @@
 import React from 'react';
 
 const EmployeePage = () => {
-  // Navigation handlers
+  // navigation logics
   const handleViewAccountsClick = () => {
     window.location.href = '/viewAccounts';
   };
@@ -15,29 +15,29 @@ const EmployeePage = () => {
     <div className="main-container">
       <h1 className="main-heading custom-header-color">Employee Dashboard</h1>
 
-      {/* Use layout similar to admin dashboard if desired */}
-      <div className="admin-dashboard-layout"> {/* Re-using class for layout consistency */}
+      {/* same alyout as admin dashboard */}
+      <div className="admin-dashboard-layout">
 
         {/* View Accounts Box */}
-        <div className="admin-box"> {/* Re-using class */}
+        <div className="admin-box"> 
           <h2 className="admin-box-heading">View Accounts</h2>
-          <ul className="admin-task-list"> {/* Re-using class */}
+          <ul className="admin-task-list"> 
             <li>View All Admin Users</li>
             <li>View All Patron Accounts</li>
           </ul>
-          <button className="admin-manage-button" onClick={handleViewAccountsClick}> {/* Re-using class */}
+          <button className="admin-manage-button" onClick={handleViewAccountsClick}> 
             View Accounts
           </button>
         </div>
 
-        {/* View Orders Box */}
-        <div className="admin-box"> {/* Re-using class */}
+        {/* view orders box */}
+        <div className="admin-box">
           <h2 className="admin-box-heading">View Orders</h2>
-          <ul className="admin-task-list"> {/* Re-using class */}
+          <ul className="admin-task-list">
             <li>View All Customer Orders</li>
             <li>Check Order Details</li>
           </ul>
-          <button className="admin-manage-button" onClick={handleViewOrdersClick}> {/* Re-using class */}
+          <button className="admin-manage-button" onClick={handleViewOrdersClick}> 
             View Orders
           </button>
         </div>

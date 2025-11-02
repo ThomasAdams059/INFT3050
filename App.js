@@ -33,7 +33,7 @@ import OrderCreate from './orderCreate';
 const API_BASE_URL = "http://localhost:3001/api/inft3050";
 
 function App() {
-  // --- Cart State (Unchanged) ---
+  
   const [cartItems, setCartItems] = useState(() => {
     try {
       const localData = localStorage.getItem('cartItems');
@@ -53,13 +53,13 @@ function App() {
     dispatch(checkLoginStatus());
   }, [dispatch]);
   
-  // --- Persist Cart (Unchanged) ---
+  
   useEffect(() => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
   }, [cartItems]);
 
 
-  // --- Cart Management Functions ---
+  // handles adding to cart
 
   const handleAddToCart = (itemToAdd) => {
     setCartItems(prevItems => {
@@ -85,36 +85,36 @@ function App() {
     alert(`${itemToAdd.name} has been added to your cart!`);
   };
 
-  // --- NEW: Function to remove a single item ---
+  // to remove a single product or item
   const handleRemoveItemFromCart = (stockItemIdToRemove) => {
     setCartItems(prevItems => 
       prevItems.filter(item => item.stockItemId !== stockItemIdToRemove)
     );
   };
   
-  // --- NEW: Function to clear the entire cart ---
+  // clear cart function
   const handleClearCart = () => {
     setCartItems([]);
-    // The useEffect hook will automatically update localStorage
+   
   };
 
-  // --- UPDATED: Logout function now clears cart ---
+  // makes sure logging out clears cart
   const handleLogout = () => {
     dispatch(logoutUser())
       .unwrap()
       .then(() => {
-        handleClearCart(); // --- ADDED THIS LINE ---
+        handleClearCart();
         alert("Logout Successful.");
         window.location.href = "/";
       })
       .catch((error) => {
         console.error("Failed to logout:", error);
-        handleClearCart(); // Still clear cart on error
+        handleClearCart(); 
         window.location.href = "/";
       });
   };
 
-  // --- Search Function (Unchanged) ---
+  // handles the search function with proper filters and accounts for user erros somewhat
   const handleSearch = async (searchTerm) => {
     console.log("Search initiated for:", searchTerm);
     setLastSearchTerm(searchTerm);
@@ -151,7 +151,7 @@ function App() {
   };
 
 
-  // --- Routing Logic ---
+  // routing logic
   let component;
   const path = window.location.pathname;
 
@@ -184,7 +184,7 @@ function App() {
         component = <RecoverAccount />;
         break;
       case "/Cart":
-        // --- UPDATED: Pass new props to CartPage ---
+        // passes new props to cart page
         component = <CartPage 
           cartItems={cartItems} 
           onOrderSuccess={handleClearCart} 
@@ -199,26 +199,26 @@ function App() {
         component = <UserManagement />;
         break;
       case "/itemManagement":
-        // --- UPDATED: Removed redundant prop ---
+        
         component = <ItemManagement />;
         break;
       case "/patronManagement":
         component = <PatronManagement />;
         break;
       case "/myAccount":
-        // --- UPDATED: Removed redundant prop ---
+        
         component = <MyAccount />;
         break;
       case "/orderHistory":
-        // --- UPDATED: Removed redundant prop ---
+        
         component = <OrderHistory />;
         break;
       case "/accountSettings":
-        // --- UPDATED: Removed redundant prop ---
+        
         component = <AccountSettings />;
         break;
       case "/addressBook":
-        // --- UPDATED: Removed redundant prop ---
+       
         component = <AddressBook />;
         break;
       case "/paymentMethod":

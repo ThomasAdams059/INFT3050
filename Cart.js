@@ -5,19 +5,19 @@ import ProductCard from './productCard';
 
 const CartPage = ({ cartItems, onRemoveItem, onClearCart }) => {
   
-  // --- 1. CALL REDUX HOOK UNCONDITIONALLY ---
+  // redux hook
   const { isLoggedIn, isAdmin, isPatron } = useSelector((state) => state.auth);
 
-  // --- 2. CALL ALL STATE HOOKS UNCONDITIONALLY ---
+  
   const [recommendedItems, setRecommendedItems] = useState([]);
   const [loadingRecs, setLoadingRecs] = useState(true);
   const [recsError, setRecsError] = useState(null);
   
   const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   
-  // --- 3. CALL EFFECT HOOK UNCONDITIONALLY ---
+  
   useEffect(() => {
-    // Only run if user *is* a patron (optimization)
+    // only runs if user is a patron
     if (!isPatron) return; 
     
     const fetchRecommendations = async () => {
@@ -34,12 +34,12 @@ const CartPage = ({ cartItems, onRemoveItem, onClearCart }) => {
 
         const priceMap = {};
         stocktakeItems.forEach(item => {
-          if (item.SourceId === 1 && item.Product) { // Only recommend hard-copy books
+          if (item.SourceId === 1 && item.Product) { // only recommend hard copy books
             priceMap[item.Product.ID] = item.Price;
           }
         });
 
-        // Filter and format products that have a price
+        // filters and format products that have a price
         const pricedProducts = allProducts
           .filter(p => priceMap[p.ID] !== undefined)
           .map(p => ({
@@ -49,7 +49,7 @@ const CartPage = ({ cartItems, onRemoveItem, onClearCart }) => {
             image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Book'
           }));
         
-        // Get 5 random items for recommendations
+        // gets random items for recommendations like 5 of them, not hardcoded anymore
         const randomRecs = pricedProducts.sort(() => 0.5 - Math.random()).slice(0, 5);
         setRecommendedItems(randomRecs);
 
@@ -62,9 +62,9 @@ const CartPage = ({ cartItems, onRemoveItem, onClearCart }) => {
     };
 
     fetchRecommendations();
-  }, [isPatron]); // Depend on isPatron to ensure it runs when true
+  }, [isPatron]); // depends on isPatron to ensure it runs when true
 
-  // --- 4. CONDITIONAL RETURN (Access Control) MOVED BELOW HOOKS ---
+  // conditional return based on whether or not is a patron ---
   if (!isPatron) {
     return (
       <div className="main-container">
@@ -73,29 +73,27 @@ const CartPage = ({ cartItems, onRemoveItem, onClearCart }) => {
       </div>
     );
   }
-  // --- END ACCESS CONTROL ---
-
-  // --- Click Handlers ---
+ 
   const handleCardClick = (productId) => {
     window.location.href = `/products?id=${productId}`;
   };
 
   const handleCheckoutClick = () => {
-    window.location.href = '/createOrder'; // Navigate to the create order page
+    window.location.href = '/createOrder'; // goes to the create order page
   };
 
-  // --- RENDER ---
+  // UI stuff
   return (
     <div className="main-container">
       <h1 className="main-heading custom-header-color">Your Cart</h1>
       <div className="cart-layout">
 
-        {/* --- LEFT COLUMN: Cart Items --- */}
+        {/* cart items shown on left */}
         <div className="cart-box" style={{ flex: '2 1 600px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h1 className="cart-heading">Items ({cartItems.length})</h1>
             
-            {/* --- NEW: Clear Cart Button --- */}
+            {/* new clear entire cart button */}
             {cartItems.length > 0 && (
               <button 
                 className="btn-delete" 
@@ -105,7 +103,7 @@ const CartPage = ({ cartItems, onRemoveItem, onClearCart }) => {
                 Clear Cart
               </button>
             )}
-            {/* --- END NEW --- */}
+           
             
           </div>
 
@@ -130,7 +128,7 @@ const CartPage = ({ cartItems, onRemoveItem, onClearCart }) => {
                       ${(item.price * item.quantity).toFixed(2)}
                     </p>
                     
-                    {/* --- NEW: Remove Item Button --- */}
+                    {/* remove item button here */}
                     <button 
                       onClick={() => onRemoveItem(item.stockItemId)}
                       style={{ 
@@ -143,7 +141,7 @@ const CartPage = ({ cartItems, onRemoveItem, onClearCart }) => {
                     >
                       Remove
                     </button>
-                    {/* --- END NEW --- */}
+                    
                     
                   </div>
                 </div>
@@ -158,7 +156,7 @@ const CartPage = ({ cartItems, onRemoveItem, onClearCart }) => {
             <span className="cart-total-price-text">${cartTotal.toFixed(2)}</span>
           </div>
 
-          {/* --- UPDATED: Checkout Button --- */}
+          {/* checkout button here */}
           <button
             className="cart-checkout-button"
             onClick={handleCheckoutClick} // Use navigation handler
@@ -172,11 +170,11 @@ const CartPage = ({ cartItems, onRemoveItem, onClearCart }) => {
           >
             Proceed to Checkout
           </button>
-          {/* --- END UPDATE --- */}
+         
 
         </div>
 
-        {/* --- RIGHT COLUMN: Recommended Items --- */}
+        {/* recommended items now on right insteasd */}
         <div className="recommended-box" style={{ flex: '1 1 300px', minWidth: '250px' }}>
           <h1 className="recommended-heading">Recommended For You</h1>
           {loadingRecs && <p>Loading recommendations...</p>}

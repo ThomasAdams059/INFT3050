@@ -14,15 +14,17 @@ const PatronManagement = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
-  
-  // --- NEW: Navigation handler ---
+
+
+  // navigation 
+
   const handleBackToDashboard = () => {
     window.location.href = '/adminAccount';
   };
-  // --- END NEW ---
 
 
- // Handle Load All Patrons
+
+ // loads all patrons
   const handleLoadPatrons = (event) => {
     event.preventDefault();
     
@@ -45,7 +47,7 @@ const PatronManagement = () => {
       console.log("Response received:", response);
       console.log("Response data:", response.data);
       
-      // Check if response has the expected structure
+      // checks to see response structure for debugging keep for now
       if (!response.data || !response.data.list) {
         console.error("Unexpected response structure:", response.data);
         setErrorMessage("Unexpected data format from server");
@@ -54,7 +56,7 @@ const PatronManagement = () => {
       }
       
       setPatrons(response.data.list);
-      setShowPatronList(true); // Show the list
+      setShowPatronList(true); // shows the list now
       setSuccessMessage("Patrons loaded successfully.");
       
     })
@@ -67,9 +69,9 @@ const PatronManagement = () => {
     });
   };
 
-  // Handle Edit Patron
+  // handles edit patrons
   const handleEditPatron = (patron) => {
-    // Use prompts to get new info
+    // get new info
     const newName = prompt("Enter new Full Name:", patron.Name);
     const newEmail = prompt("Enter new Email:", patron.Email);
 
@@ -94,7 +96,7 @@ const PatronManagement = () => {
     axios.patch(`${baseUrl}/${patron.UserID}`, payload, { withCredentials: true })
       .then(response => {
         setSuccessMessage("Patron updated successfully!");
-        // Update local state to reflect change
+        // updates local state 
         setPatrons(prevPatrons => 
           prevPatrons.map(p => 
             p.UserID === patron.UserID ? { ...p, ...payload } : p
@@ -110,7 +112,7 @@ const PatronManagement = () => {
       });
   };
 
-  // Handle Delete Patron
+  // handles delete patron
   const handleDeletePatron = (patron) => {
     if (!window.confirm(`Are you sure you want to delete patron "${patron.Name}" (ID: ${patron.UserID})? This cannot be undone.`)) {
       return;
@@ -123,7 +125,7 @@ const PatronManagement = () => {
     axios.delete(`${baseUrl}/${patron.UserID}`, { withCredentials: true })
       .then(response => {
         setSuccessMessage(`Patron "${patron.Name}" deleted successfully.`);
-        // Remove patron from local state
+        // remove patron from local state
         setPatrons(prevPatrons => 
           prevPatrons.filter(p => p.UserID !== patron.UserID)
         );
@@ -139,20 +141,20 @@ const PatronManagement = () => {
 
   return (
     <div className="management-container">
-      {/* --- NEW BUTTON --- */}
+     {/* same button */}
       <button 
         onClick={handleBackToDashboard} 
-        className="admin-manage-button" // Use a consistent class
+        className="admin-manage-button" 
         style={{ marginBottom: '20px', width: 'auto', backgroundColor: '#6c757d', color: 'white' }} 
       >
         &larr; Back to Admin Dashboard
       </button>
-      {/* --- END NEW BUTTON --- */}
+     
       
       <div className="management-section">
         <h2>Patron Management</h2>
         
-        {/* Display Messages */}
+        {/* messages display */}
         {errorMessage && <div className="error-message">{errorMessage}</div>}
         {successMessage && <div className="success-message">{successMessage}</div>}
         
@@ -204,4 +206,3 @@ const PatronManagement = () => {
 };
 
 export default PatronManagement;
-

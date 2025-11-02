@@ -7,26 +7,26 @@ const UserManagement = () => {
 
   const baseUrl = "http://localhost:3001/api/inft3050";
 
-  // State for Add User form
+ 
   const [userName, setUserName] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [makeAdmin, setMakeAdmin] = useState(false);
 
-  // State for Edit/Delete form
+  
   const [searchUser, setSearchUser] = useState("");
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [foundUser, setFoundUser] = useState(null);
   
-  // State for messages
+  
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Security check to redirect non-admins
+  // check to redirect user not an admin
   useEffect(() => {
-    if (user === null) return; // Wait for auth state to be determined
+    if (user === null) return; // wait for auth state
 
     if (!isAdmin) {
       setErrorMessage("Access Denied: You must be an administrator to view this page.");
@@ -36,12 +36,12 @@ const UserManagement = () => {
     }
   }, [user, isAdmin]);
 
-  // Navigation handler
+  // navigation
   const handleBackToDashboard = () => {
     window.location.href = '/adminAccount';
   };
 
-  // --- Hashing functions ---
+  // same as userhelper
   async function sha256(message) {
     const msgBuffer = new TextEncoder().encode(message);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -60,7 +60,7 @@ const UserManagement = () => {
     return { salt, hash };
   };
   
-  // --- handleAddUser ---
+  // handles adding a user
   const handleAddUser = (event) => {
     event.preventDefault();
     
@@ -79,10 +79,10 @@ const UserManagement = () => {
         UserName: userName,
         Name: fullName,
         Email: email,
-        // --- THIS IS THE FIX ---
-        // Convert boolean (makeAdmin) to 1 or 0 for the SQL database
+        
+        // new added makeAdmin 1 or 0 for sql data base
         IsAdmin: makeAdmin ? 1 : 0, 
-        // --- END FIX ---
+       
         Salt: hashInfo.salt,
         HashPW: hashInfo.hash
       };
@@ -90,7 +90,7 @@ const UserManagement = () => {
       axios.post(`${baseUrl}/User`, newUser, { withCredentials: true })
         .then(response => {
           setSuccessMessage(`User "${userName}" created successfully!`);
-          // Clear form
+          // clears the form
           setUserName("");
           setFullName("");
           setEmail("");
@@ -107,7 +107,7 @@ const UserManagement = () => {
     });
   };
 
-  // --- handleSearchUser ---
+  // handles searching a user
   const handleSearchUser = (event) => {
     event.preventDefault();
     setIsLoading(true);
@@ -116,12 +116,11 @@ const UserManagement = () => {
     setShowUserInfo(false);
     setFoundUser(null);
 
-    // --- FIX: Search by UserName ---
-    // We fetch the full list and filter, as the API doesn't support /User/{username}
+    
     axios.get(`${baseUrl}/User`, { withCredentials: true })
       .then(response => {
         const users = response.data.list || [];
-        // Find by UserName, case-insensitive
+        // finds user by username and is case sensitive
         const userFound = users.find(u => u.UserName.toLowerCase() === searchUser.toLowerCase());
         
         if (userFound) {
@@ -141,17 +140,17 @@ const UserManagement = () => {
       });
   };
 
-  // --- handleEditUser ---
+  // editing a user
   const handleEditUser = () => {
     if (!foundUser) return;
 
     const newName = prompt("Enter new Full Name:", foundUser.Name);
     const newEmail = prompt("Enter new Email:", foundUser.Email);
-    // Use confirm for boolean, which is more reliable than a prompt
+    // use confirm for boolean instead
     const newIsAdmin = window.confirm(`Make this user an Admin?\n(Cancel = No, OK = Yes)`);
 
     if (newName === null || newEmail === null) {
-      return; // User cancelled
+      return; // admin cancelled
     }
 
     setIsLoading(true);
@@ -161,14 +160,14 @@ const UserManagement = () => {
     const payload = {
       Name: newName,
       Email: newEmail,
-      IsAdmin: newIsAdmin ? 1 : 0 // --- FIX: Send 1 or 0 ---
+      IsAdmin: newIsAdmin ? 1 : 0 // send 1 or 0
     };
 
-    // --- FIX: Use UserID for PATCH, not UserName ---
+   
     axios.patch(`${baseUrl}/User/${foundUser.UserID}`, payload, { withCredentials: true })
       .then(response => {
         setSuccessMessage("User updated successfully!");
-        setFoundUser(response.data); // Update UI with new data from response
+        setFoundUser(response.data); // updates with new data from response to see
       })
       .catch(error => {
         console.error("Error updating user:", error.response || error);
@@ -179,7 +178,7 @@ const UserManagement = () => {
       });
   };
 
-  // --- handleDeleteUser ---
+  // handles deleting user
   const handleDeleteUser = () => {
     if (!foundUser) return;
 
@@ -191,11 +190,11 @@ const UserManagement = () => {
     setErrorMessage("");
     setSuccessMessage("");
 
-    // --- FIX: Use UserID for DELETE, not UserName ---
+    // used USerID for delete and not username anymore
     axios.delete(`${baseUrl}/User/${foundUser.UserID}`, { withCredentials: true })
       .then(response => {
         setSuccessMessage(`User "${foundUser.UserName}" deleted successfully.`);
-        // Clear form
+        // clears the form
         setFoundUser(null);
         setShowUserInfo(false);
         setSearchUser("");
@@ -209,7 +208,7 @@ const UserManagement = () => {
       });
   };
 
-  // Render block for non-admins
+  // render block for non-admins
   if (!isAdmin) {
     return (
       <div className="management-container">
@@ -232,12 +231,12 @@ const UserManagement = () => {
       
       <h1>User Management</h1>
       
-      {/* Display Messages */}
+      {/* messages display */}
       {errorMessage && <div className="error-message" style={{color: 'red', marginBottom: '15px'}}>{errorMessage}</div>}
       {successMessage && <div className="success-message" style={{color: 'green', marginBottom: '15px'}}>{successMessage}</div>}
       
       <div className="management-grid">
-        {/* --- ADD USER FORM --- */}
+        {/*add user form on left */}
         <div className="management-section">
           <h2>Add User</h2>
           <form onSubmit={handleAddUser}>
@@ -274,7 +273,7 @@ const UserManagement = () => {
           </form>
         </div>
         
-        {/* --- EDIT/DELETE USER FORM --- */}
+        {/* edit and delete user form on the right */}
         <div className="management-section">
           <h2>Edit/Delete User</h2>
           <form onSubmit={handleSearchUser} className="search-box">
@@ -286,7 +285,8 @@ const UserManagement = () => {
               onChange={(e) => setSearchUser(e.target.value)}
               required
             />
-            {/* --- FIX: Changed class for styling --- */}
+            
+
             <button type="submit" className="btn-edit" disabled={isLoading} style={{ background: '#007bff' }}>
               {isLoading ? "Searching..." : "Search"}
             </button>
@@ -294,7 +294,7 @@ const UserManagement = () => {
           {showUserInfo && foundUser && (
             <>
               <div className="user-info">
-                {/* --- FIX: Use UserID --- */}
+                {/* userID */}
                 <h3>User Info (ID: {foundUser.UserID})</h3>
                 <p><strong>Username:</strong> {foundUser.UserName}</p>
                 <p><strong>Full Name:</strong> {foundUser.Name}</p>

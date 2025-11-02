@@ -3,7 +3,7 @@ import axios from 'axios';
 import ProductCard from './productCard';
 
 export default function Author() {
-  const [authors, setAuthors] = useState([]); // Stores data grouped by author
+  const [authors, setAuthors] = useState([]); // stores data grouped by author
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -11,10 +11,10 @@ export default function Author() {
     const fetchAuthorAndStocktakeData = async () => {
       try {
         const baseUrl = "http://localhost:3001/api/inft3050";
-        const productsUrl = `${baseUrl}/Product`; // Fetch all products to find Authors
+        const productsUrl = `${baseUrl}/Product`; // gets all products to find Authors
         const stocktakeUrl = `${baseUrl}/Stocktake`;
 
-        // 1. Fetch Products and Stocktake data in parallel
+        // gets products and stocktake data
         const [productsResponse, stocktakeResponse] = await Promise.all([
           axios.get(productsUrl),
           axios.get(stocktakeUrl)
@@ -29,10 +29,10 @@ export default function Author() {
             return;
         }
 
-        // 2. Create a price lookup map for quick access
+        // creates price look up for ease
         const priceMap = {};
         stocktakeList.forEach(item => {
-          // Ensure we only consider items from SourceId 1 (Hard Copy Books), as in genre.js
+          // ensures we consider items from source id 1 as in genre.js
           if(item.SourceId === 1) 
             priceMap[item.ProductId] = item.Price;
         });
@@ -41,30 +41,30 @@ export default function Author() {
         const authorsMap = {};
 
         productsList.forEach(product => {
-          // Use 'Unknown Author' as fallback if the field is missing
+          // uses unknown author as fallback if the field is missing
           const authorName = product.Author || 'Unknown Author';
           
           if (!authorsMap[authorName]) {
             authorsMap[authorName] = {
-              id: authorName.replace(/\s/g, ''), // Create a simple unique ID by removing spaces
+              id: authorName.replace(/\s/g, ''), // creates a simple unique ID by removing spaces
               name: authorName,
               products: []
             };
           }
 
-          // Apply price to the product
+          // price to product added if there is one
           const price = priceMap[product.ID] ? `$${priceMap[product.ID].toFixed(2)}` : 'Price N/A';
           
           authorsMap[authorName].products.push({
             id: product.ID,
             name: product.Name,
-            // Placeholder value consistent with other components
+            
             image: 'https://placehold.co/200x300/F4F4F5/18181B?text=Product',
             price: price
           });
         });
 
-        // Convert the map of authors back into a renderable array
+        // converts maps to authos in an array
         setAuthors(Object.values(authorsMap));
         setLoading(false);
         setError(null);
@@ -80,7 +80,7 @@ export default function Author() {
   }, []);
 
   const handleCardClick = (productId) => {
-    // Navigates to the product page with the product's ID in the URL, as is standard practice
+    // goes to the product page with the products ID in the url as standard
     window.location.href = `/products?id=${productId}`;
   };
 
@@ -96,12 +96,12 @@ export default function Author() {
         <p className="error-message">{error}</p>
       ) : authors.length > 0 ? (
         authors.map(author => (
-          <div key={author.id} className="content-section"> {/* Uses unique author name as key */}
+          <div key={author.id} className="content-section"> {/* uses unique author name as key */}
             <header className="section-header">
               <h2 className="section-heading">{author.name}</h2>
             </header>
             <main className="horizontal-scroll-container">
-              {/* Display the first 7 books by this author, consistent with other pages */}
+              {/* displays the first 7 books by this author like other pages */}
               {author.products.slice(0, 7).map(product => (
                 <ProductCard
                   key={product.id}
